@@ -17,7 +17,7 @@ public class Actor extends AbstractActor {
 		
 		if (randInt > 3) {
 			System.out.println("Exception " + message.getId());
-			//throw new Exception();
+			throw new Exception();
 		}
 		
 		try {
