@@ -1,4 +1,4 @@
-package com.middleware.project3;
+package it.polimi.mw.compinf;
 
 import java.util.Optional;
 
@@ -7,14 +7,15 @@ import akka.actor.AbstractActor;
 public class Actor extends AbstractActor {
 	@Override
 	public Receive createReceive() {
-		return receiveBuilder().match(Message.class, this::onMessage).build();
+		return receiveBuilder().match(TaskMessage.class, this::onMessage).build();
 	}
 	
-	private void onMessage(Message message) throws Exception {
+	private void onMessage(TaskMessage message) throws Exception {
 		System.out.println("Received " + message.getId());
 		
 		int randInt = (int) (Math.random() * 4 + 1);
 		
+		// Simulating random task failure
 		if (randInt > 3) {
 			System.out.println("Exception " + message.getId());
 			throw new Exception();
@@ -35,6 +36,11 @@ public class Actor extends AbstractActor {
 		
 		// Pay attention to infinite loops!
 		// https://stackoverflow.com/questions/13542921/akka-resending-the-breaking-message
+		
+		// TODO What happens if I have a very long tasks queue and one of the first task dies?
+		// Should we put it in a priority queue? Otherwise it will be sent to the end of the queue
+		// So it will be restarted after the last inserted task 
+		
 		// FIXME Patch orElse == null
 		getContext().getSelf().tell(message.orElse(null), getContext().getSender());
 	}

@@ -1,4 +1,4 @@
-package com.middleware.project3;
+package it.polimi.mw.compinf;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -19,6 +19,7 @@ public class MainClass {
 	public static void main(String[] args) {
 		ActorSystem sys = ActorSystem.create("System");
 
+		// TODO Disable logging of exception stack trace
 		SupervisorStrategy strategy = new OneForOneStrategy(SUPERVISOR_RETRIES,
 				Duration.ofMinutes(SUPERVISOR_PERIOD),
 				DeciderBuilder.match(Exception.class, e -> SupervisorStrategy.restart()).build());
@@ -26,7 +27,7 @@ public class MainClass {
 		ActorRef router = sys.actorOf(new BalancingPool(POOL_ACTORS, strategy, "pool-dispatcher").props(Props.create(Actor.class)), "Router");
 
 		for (int i = 0; i < 12; i++) {
-			router.tell(new Message(i), ActorRef.noSender());
+			router.tell(new TaskMessage(i), ActorRef.noSender());
 		}
 	}
 }

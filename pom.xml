@@ -2,8 +2,9 @@
 <project>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>hello-akka-java</groupId>
-    <artifactId>app</artifactId>
+    <groupId>it.polimi.mw.compinf</groupId>
+    <artifactId>compute-infrastructure</artifactId>
+    <name>Compute Infrastructure</name>
     <version>1.0</version>
 
     <properties>
@@ -41,8 +42,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.5.1</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -54,7 +55,7 @@
                     <arguments>
                         <argument>-classpath</argument>
                         <classpath />
-                        <argument>com.example.AkkaQuickstart</argument>
+                        <argument>it.polimi.mw.compinf.MainClass</argument>
                     </arguments>
                 </configuration>
             </plugin>
