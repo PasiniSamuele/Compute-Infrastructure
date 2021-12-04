@@ -3,11 +3,15 @@ package it.polimi.mw.compinf;
 import java.util.Optional;
 
 import akka.actor.AbstractActor;
+import jdk.internal.org.jline.utils.ShutdownHooks.Task;
 
 public class Actor extends AbstractActor {
 	@Override
 	public Receive createReceive() {
-		return receiveBuilder().match(TaskMessage.class, this::onMessage).build();
+		return receiveBuilder()
+				.match(TaskMessage.class, this::onMessage)
+				.match(AnotherTaskMessage.class, this::onMessageNew)
+				.build();
 	}
 	
 	private void onMessage(TaskMessage message) throws Exception {
@@ -18,7 +22,7 @@ public class Actor extends AbstractActor {
 		// Simulating random task failure
 		if (randInt > 3) {
 			System.out.println("Exception " + message.getId());
-			throw new Exception();
+			//throw new Exception();
 		}
 		
 		try {
@@ -30,6 +34,9 @@ public class Actor extends AbstractActor {
 		System.out.println("Finished " + message.getId());
 	}
 	
+	private void onMessageNew(AnotherTaskMessage message) {
+		System.out.println("Another");
+	}
 	@Override
 	public void preRestart(Throwable reason, Optional<Object> message) {
 		System.out.println("Restarting...");
@@ -39,7 +46,7 @@ public class Actor extends AbstractActor {
 		
 		// TODO What happens if I have a very long tasks queue and one of the first task dies?
 		// Should we put it in a priority queue? Otherwise it will be sent to the end of the queue
-		// So it will be restarted after the last inserted task 
+		// So it will be restarted after the last inserted task
 		
 		// FIXME Patch orElse == null
 		getContext().getSelf().tell(message.orElse(null), getContext().getSender());
