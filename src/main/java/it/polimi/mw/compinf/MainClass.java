@@ -4,7 +4,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.SupervisorStrategy;
-import akka.routing.BalancingPool;
 import akka.routing.FromConfig;
 import akka.actor.OneForOneStrategy;
 import akka.japi.pf.DeciderBuilder;
@@ -23,13 +22,9 @@ public class MainClass {
 
 		ActorRef router = sys.actorOf(
 				FromConfig.getInstance().withSupervisorStrategy(strategy).props(Props.create(Actor.class)), "router");
-
-		for (int i = 0; i < 12; i++) {
-			if (i % 3 == 1) {
-				router.tell(new TaskMessage(i, 0), ActorRef.noSender());
-			} else {
-				router.tell(new TaskMessage(i), ActorRef.noSender());
-			}
+		
+		for (int i = 0; i < 20; i++) {
+			router.tell(new TaskMessage(i), ActorRef.noSender());
 		}
 
 //		Message m1 = new TaskMessage(1);
