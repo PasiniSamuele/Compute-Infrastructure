@@ -21,7 +21,7 @@ public class Actor extends AbstractActor {
 		
 		// Simulating random task failure
 		if (randInt > 3) {
-			System.out.println("Exception " + message.getId());
+			//System.out.println("Exception " + message.getId());
 			//throw new Exception();
 		}
 		

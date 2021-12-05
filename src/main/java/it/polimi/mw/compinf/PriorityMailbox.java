@@ -13,8 +13,7 @@ class PriorityMailbox extends UnboundedStablePriorityMailbox {
 			@Override
 			public int gen(Object message) {
 				TaskMessage taskMessage = (TaskMessage) message;
-				throw new RuntimeException();
-				//return taskMessage.getPriority();
+				return taskMessage.getPriority();
 			}
 		});
 	}

@@ -24,7 +24,7 @@ public class MainClass {
 		ActorRef router = sys.actorOf(
 				FromConfig.getInstance().withSupervisorStrategy(strategy).props(Props.create(Actor.class)), "router");
 
-		for (int i = 0; i < 21; i++) {
+		for (int i = 0; i < 12; i++) {
 			if (i % 3 == 1) {
 				router.tell(new TaskMessage(i, 0), ActorRef.noSender());
 			} else {
