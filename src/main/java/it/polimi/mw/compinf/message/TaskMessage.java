@@ -1,4 +1,4 @@
-package it.polimi.mw.compinf;
+package it.polimi.mw.compinf.message;
 
 public class TaskMessage extends Message {
 	private int id;

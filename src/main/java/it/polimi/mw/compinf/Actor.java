@@ -4,7 +4,8 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import akka.actor.AbstractActor;
-import jdk.internal.org.jline.utils.ShutdownHooks.Task;
+import it.polimi.mw.compinf.message.AnotherTaskMessage;
+import it.polimi.mw.compinf.message.TaskMessage;
 
 public class Actor extends AbstractActor {
 	@Override
