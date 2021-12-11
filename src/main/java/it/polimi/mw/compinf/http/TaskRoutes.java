@@ -55,7 +55,7 @@ public class TaskRoutes {
                 concat(
                     get(() ->
                         onSuccess(getTasks(),
-                            users -> complete(StatusCodes.OK, users, Jackson.marshaller())
+                            tasks -> complete(StatusCodes.OK, tasks, Jackson.marshaller())
                         )
                     )
                 )
