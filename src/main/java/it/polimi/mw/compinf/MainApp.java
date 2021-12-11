@@ -14,9 +14,8 @@ import akka.http.javadsl.server.Route;
 import akka.routing.FromConfig;
 import akka.actor.OneForOneStrategy;
 import akka.japi.pf.DeciderBuilder;
-import it.polimi.mw.compinf.http.UserRegistry;
-import it.polimi.mw.compinf.http.UserRoutes;
-import it.polimi.mw.compinf.message.TaskMessage;
+import it.polimi.mw.compinf.http.TaskRegistry;
+import it.polimi.mw.compinf.http.TaskRoutes;
 import scala.concurrent.ExecutionContextExecutor;
 
 import java.net.InetSocketAddress;
@@ -49,7 +48,7 @@ public class MainApp {
 		ActorSystem sys = ActorSystem.create("system");
 
 		Duration duration = Duration.create(SUPERVISOR_PERIOD, TimeUnit.MINUTES);
-		// TODO Disable logging of exception stack trace
+
 		SupervisorStrategy strategy = new OneForOneStrategy(SUPERVISOR_RETRIES, duration, false,
 				DeciderBuilder.match(Exception.class, e -> SupervisorStrategy.restart()).build());
 
@@ -58,11 +57,11 @@ public class MainApp {
 
 		//#server-bootstrapping
 		Behavior<NotUsed> rootBehavior = Behaviors.setup(context -> {
-			akka.actor.typed.ActorRef<UserRegistry.Command> userRegistryActor =
-					context.spawn(UserRegistry.create(), "UserRegistry");
+			akka.actor.typed.ActorRef<TaskRegistry.Command> userRegistryActor =
+					context.spawn(TaskRegistry.create(), "UserRegistry");
 
-			UserRoutes userRoutes = new UserRoutes(context.getSystem(), userRegistryActor);
-			startHttpServer(userRoutes.userRoutes(), context.getSystem());
+			TaskRoutes taskRoutes = new TaskRoutes(context.getSystem(), userRegistryActor);
+			startHttpServer(taskRoutes.taskRoutes(), context.getSystem());
 
 			return Behaviors.empty();
 		});
@@ -74,8 +73,8 @@ public class MainApp {
 		//#server-bootstrapping
 
 
-		for (int i = 0; i < 20; i++) {
+		/*for (int i = 0; i < 20; i++) {
 			router.tell(new TaskMessage(i), ActorRef.noSender());
-		}
+		}*/
 	}
 }

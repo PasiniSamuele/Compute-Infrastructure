@@ -4,8 +4,6 @@ import akka.actor.typed.ActorRef;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
-import it.polimi.mw.compinf.http.UserRegistry;
-import it.polimi.mw.compinf.http.UserRoutes;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
 import akka.http.javadsl.model.HttpRequest;
@@ -15,35 +13,35 @@ import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class UserRoutesTest extends JUnitRouteTest {
+public class TaskRoutesTest extends JUnitRouteTest {
 
     @ClassRule
     public static TestKitJunitResource testkit = new TestKitJunitResource();
 
     // shared registry for all tests
-    private static ActorRef<UserRegistry.Command> userRegistry;
+    private static ActorRef<TaskRegistry.Command> taskRegistry;
     private TestRoute appRoute;
 
     @BeforeClass
     public static void beforeClass() {
-        userRegistry = testkit.spawn(UserRegistry.create());
+        taskRegistry = testkit.spawn(TaskRegistry.create());
     }
 
     @Before
     public void before() {
-        UserRoutes userRoutes = new UserRoutes(testkit.system(), userRegistry);
-        appRoute = testRoute(userRoutes.userRoutes());
+        TaskRoutes taskRoutes = new TaskRoutes(testkit.system(), taskRegistry);
+        appRoute = testRoute(taskRoutes.taskRoutes());
     }
 
     @AfterClass
     public static void afterClass() {
-        testkit.stop(userRegistry);
+        testkit.stop(taskRegistry);
     }
 
     //#actual-test
     @Test
-    public void test1NoUsers() {
-        appRoute.run(HttpRequest.GET("/users"))
+    public void test1NoTasks() {
+        appRoute.run(HttpRequest.GET("/tasks"))
                 .assertStatusCode(StatusCodes.OK)
                 .assertMediaType("application/json")
                 .assertEntity("{\"users\":[]}");
@@ -53,21 +51,21 @@ public class UserRoutesTest extends JUnitRouteTest {
     //#testing-post
     @Test
     public void test2HandlePOST() {
-        appRoute.run(HttpRequest.POST("/users")
+        appRoute.run(HttpRequest.POST("/tasks")
                 .withEntity(MediaTypes.APPLICATION_JSON.toContentType(),
-                        "{\"name\": \"Kapi\", \"age\": 42, \"countryOfResidence\": \"jp\"}"))
+                        "{\"name\": \"Kapi\"}"))
                 .assertStatusCode(StatusCodes.CREATED)
                 .assertMediaType("application/json")
-                .assertEntity("{\"description\":\"User Kapi created.\"}");
+                .assertEntity("{\"description\":\"Task Kapi created.\"}");
     }
     //#testing-post
 
     @Test
     public void test3Remove() {
-        appRoute.run(HttpRequest.DELETE("/users/Kapi"))
+        appRoute.run(HttpRequest.DELETE("/tasks/Kapi"))
                 .assertStatusCode(StatusCodes.OK)
                 .assertMediaType("application/json")
-                .assertEntity("{\"description\":\"User Kapi deleted.\"}");
+                .assertEntity("{\"description\":\"Task Kapi deleted.\"}");
 
     }
 }

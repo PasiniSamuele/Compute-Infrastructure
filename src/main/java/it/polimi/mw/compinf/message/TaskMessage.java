@@ -1,7 +1,7 @@
 package it.polimi.mw.compinf.message;
 
-public class TaskMessage extends Message {
-	private int id;
+public class TaskMessage implements Message {
+	private final int id;
 	private int priority;
 	
 	public TaskMessage(int id) {
@@ -21,10 +21,6 @@ public class TaskMessage extends Message {
 		return priority;
 	}
 
-	public void setPriority(int priority) {
-		this.priority = priority;
-	}
-	
 	public TaskMessage increasePriority() {
 		if (priority > 0) {
 			priority--;

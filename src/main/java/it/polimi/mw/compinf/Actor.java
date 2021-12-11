@@ -26,7 +26,7 @@ public class Actor extends AbstractActor {
 		}
 
 		try {
-			Thread.sleep(randInt * 1000);
+			Thread.sleep(randInt * 1000L);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
