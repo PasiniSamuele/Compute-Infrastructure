@@ -8,6 +8,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import it.polimi.mw.compinf.message.TaskMessage;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,20 +45,20 @@ public class TaskRegistry extends AbstractBehavior<TaskRegistry.Command>  {
     }
 
     public final static class GetTask implements Command {
-        public final String name;
+        public final int id;
         public final ActorRef<GetTaskResponse> replyTo;
-        public GetTask(String name, ActorRef<GetTaskResponse> replyTo) {
-            this.name = name;
+        public GetTask(int id, ActorRef<GetTaskResponse> replyTo) {
+            this.id = id;
             this.replyTo = replyTo;
         }
     }
 
 
     public final static class DeleteTask implements Command {
-        public final String name;
+        public final int id;
         public final ActorRef<ActionPerformed> replyTo;
-        public DeleteTask(String name, ActorRef<ActionPerformed> replyTo) {
-            this.name = name;
+        public DeleteTask(int id, ActorRef<ActionPerformed> replyTo) {
+            this.id = id;
             this.replyTo = replyTo;
         }
     }
@@ -72,11 +73,11 @@ public class TaskRegistry extends AbstractBehavior<TaskRegistry.Command>  {
 
     //#task-case-classes
     public final static class Task {
-        public final String name;
+        public final int id;
 
         @JsonCreator
-        public Task(@JsonProperty("name") String name) {
-            this.name = name;
+        public Task(@JsonProperty("id") int id) {
+            this.id = id;
         }
     }
 
@@ -88,14 +89,16 @@ public class TaskRegistry extends AbstractBehavior<TaskRegistry.Command>  {
     }
     //#task-case-classes
 
+    private final akka.actor.ActorRef actorRouter;
     private final List<Task> tasks = new ArrayList<>();
 
-    private TaskRegistry(ActorContext<Command> context) {
+    private TaskRegistry(ActorContext<Command> context, akka.actor.ActorRef actorRouter) {
         super(context);
+        this.actorRouter = actorRouter;
     }
 
-    public static Behavior<Command> create() {
-        return Behaviors.setup(TaskRegistry::new);
+    public static Behavior<Command> create(akka.actor.ActorRef actorRouter) {
+        return Behaviors.setup(context -> new TaskRegistry(context, actorRouter));
     }
 
     @Override
@@ -117,21 +120,22 @@ public class TaskRegistry extends AbstractBehavior<TaskRegistry.Command>  {
 
     private Behavior<Command> onCreateTask(CreateTask command) {
         tasks.add(command.task);
-        command.replyTo.tell(new ActionPerformed(String.format("Task %s created.", command.task.name)));
+        command.replyTo.tell(new ActionPerformed(String.format("Task %s created.", command.task.id)));
+        actorRouter.tell(new TaskMessage(command.task.id), akka.actor.ActorRef.noSender());
         return this;
     }
 
     private Behavior<Command> onGetTask(GetTask command) {
         Optional<Task> maybeUser = tasks.stream()
-                .filter(task -> task.name.equals(command.name))
+                .filter(task -> task.id == command.id)
                 .findFirst();
         command.replyTo.tell(new GetTaskResponse(maybeUser));
         return this;
     }
 
     private Behavior<Command> onDeleteTask(DeleteTask command) {
-        tasks.removeIf(task -> task.name.equals(command.name));
-        command.replyTo.tell(new ActionPerformed(String.format("Task %s deleted.", command.name)));
+        tasks.removeIf(task -> task.id == command.id);
+        command.replyTo.tell(new ActionPerformed(String.format("Task %s deleted.", command.id)));
         return this;
     }
 

@@ -28,12 +28,12 @@ public class TaskRoutes {
         askTimeout = system.settings().config().getDuration("comp-inf-app.routes.ask-timeout");
     }
 
-    private CompletionStage<TaskRegistry.GetTaskResponse> getTask(String name) {
-        return AskPattern.ask(taskRegistryActor, ref -> new TaskRegistry.GetTask(name, ref), askTimeout, scheduler);
+    private CompletionStage<TaskRegistry.GetTaskResponse> getTask(int id) {
+        return AskPattern.ask(taskRegistryActor, ref -> new TaskRegistry.GetTask(id, ref), askTimeout, scheduler);
     }
 
-    private CompletionStage<TaskRegistry.ActionPerformed> deleteTask(String name) {
-        return AskPattern.ask(taskRegistryActor, ref -> new TaskRegistry.DeleteTask(name, ref), askTimeout, scheduler);
+    private CompletionStage<TaskRegistry.ActionPerformed> deleteTask(int id) {
+        return AskPattern.ask(taskRegistryActor, ref -> new TaskRegistry.DeleteTask(id, ref), askTimeout, scheduler);
     }
 
     private CompletionStage<TaskRegistry.Tasks> getTasks() {
@@ -45,21 +45,31 @@ public class TaskRoutes {
     }
 
     /**
-    * This method creates one route (of possibly many more that will be part of your Web App)
-    */
+     * This method creates one route (of possibly many more that will be part of your Web App)
+     */
     //#all-routes
     public Route taskRoutes() {
         return pathPrefix("tasks", () -> concat(
-            //#tasks-get
-            pathEnd(() ->
-                concat(
-                    get(() ->
-                        onSuccess(getTasks(),
-                            tasks -> complete(StatusCodes.OK, tasks, Jackson.marshaller())
+                pathEnd(() ->
+                        concat(
+                                //#tasks-get
+                                get(() ->
+                                        onSuccess(getTasks(),
+                                                tasks -> complete(StatusCodes.OK, tasks, Jackson.marshaller())
+                                        )
+                                ),
+                                //#task-create
+                                post(() ->
+                                        entity(
+                                                Jackson.unmarshaller(Task.class),
+                                                task -> onSuccess(createTask(task), performed -> {
+                                                            log.info("Create result: {}", performed.description);
+                                                            return complete(StatusCodes.CREATED, performed, Jackson.marshaller());
+                                                        })
+                                        )
+                                )
                         )
-                    )
                 )
-            )
         ));
     }
 }

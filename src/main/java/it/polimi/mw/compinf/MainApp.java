@@ -52,15 +52,15 @@ public class MainApp {
 		SupervisorStrategy strategy = new OneForOneStrategy(SUPERVISOR_RETRIES, duration, false,
 				DeciderBuilder.match(Exception.class, e -> SupervisorStrategy.restart()).build());
 
-		ActorRef router = sys.actorOf(
-				FromConfig.getInstance().withSupervisorStrategy(strategy).props(Props.create(Actor.class)), "router");
+		ActorRef actorRouter = sys.actorOf(
+				FromConfig.getInstance().withSupervisorStrategy(strategy).props(Props.create(Actor.class)), "actorRouter");
 
 		//#server-bootstrapping
 		Behavior<NotUsed> rootBehavior = Behaviors.setup(context -> {
-			akka.actor.typed.ActorRef<TaskRegistry.Command> userRegistryActor =
-					context.spawn(TaskRegistry.create(), "UserRegistry");
+			akka.actor.typed.ActorRef<TaskRegistry.Command> taskRegistryActor =
+					context.spawn(TaskRegistry.create(actorRouter), "TaskRegistry");
 
-			TaskRoutes taskRoutes = new TaskRoutes(context.getSystem(), userRegistryActor);
+			TaskRoutes taskRoutes = new TaskRoutes(context.getSystem(), taskRegistryActor);
 			startHttpServer(taskRoutes.taskRoutes(), context.getSystem());
 
 			return Behaviors.empty();
@@ -74,7 +74,7 @@ public class MainApp {
 
 
 		/*for (int i = 0; i < 20; i++) {
-			router.tell(new TaskMessage(i), ActorRef.noSender());
+			actorRouter.tell(new TaskMessage(i), ActorRef.noSender());
 		}*/
 	}
 }
