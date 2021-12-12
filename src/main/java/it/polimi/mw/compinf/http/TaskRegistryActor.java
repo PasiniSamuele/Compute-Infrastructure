@@ -12,6 +12,8 @@ import it.polimi.mw.compinf.message.TaskMessage;
 import java.util.ArrayList;
 import java.util.List;
 
+import static it.polimi.mw.compinf.http.TaskRegistryMessages.*;
+
 public class TaskRegistryActor extends AbstractActor {
 
     LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
@@ -61,24 +63,35 @@ public class TaskRegistryActor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(TaskRegistryMessages.GetTasks.class, getTasks -> getSender().tell(new Tasks(tasks), getSelf()))
-                .match(TaskRegistryMessages.CreateTask.class, createTask -> {
-                    tasks.add(createTask.getTask());
-                    actorRouter.tell(new TaskMessage(createTask.getTask().getId()), ActorRef.noSender());
-                    getSender().tell(new TaskRegistryMessages.ActionPerformed(
-                            String.format("Task %s created.", createTask.getTask().getId())), getSelf());
-                })
-                .match(TaskRegistryMessages.GetTask.class, getTask -> {
-                    getSender().tell(tasks.stream()
-                            .filter(task -> task.getId() == getTask.getId())
-                            .findFirst(), getSelf());
-                })
-                .match(TaskRegistryMessages.DeleteTask.class, deleteTask -> {
-                    tasks.removeIf(task -> task.getId() == deleteTask.getId());
-                    getSender().tell(new TaskRegistryMessages.ActionPerformed(String.format("User %s deleted.", deleteTask.getId())),
-                            getSelf());
-
-                }).matchAny(o -> log.info("received unknown message"))
+                .match(GetTasks.class, this::onGetTasks)
+                .match(CreateTask.class, this::onCreateTask)
+                .match(GetTask.class, this::onGetTask)
+                .match(DeleteTask.class, this::onDeleteTask)
+                .matchAny(o -> log.info("received unknown message"))
                 .build();
+    }
+
+    private void onGetTasks(GetTasks getTasks) {
+        getSender().tell(new Tasks(tasks), getSelf());
+    }
+
+    private void onCreateTask(CreateTask createTask) {
+        tasks.add(createTask.getTask());
+        actorRouter.tell(new TaskMessage(createTask.getTask().getId()), ActorRef.noSender());
+        getSender().tell(new ActionPerformed(
+                String.format("Task %s created.", createTask.getTask().getId())), getSelf());
+    }
+
+    private void onGetTask(GetTask getTask) {
+        getSender().tell(tasks.stream()
+                .filter(task -> task.getId() == getTask.getId())
+                .findFirst(), getSelf());
+    }
+
+    private void onDeleteTask(DeleteTask deleteTask) {
+        tasks.removeIf(task -> task.getId() == deleteTask.getId());
+        getSender().tell(new ActionPerformed(String.format("Task %s deleted.", deleteTask.getId())),
+                getSelf());
+
     }
 }
