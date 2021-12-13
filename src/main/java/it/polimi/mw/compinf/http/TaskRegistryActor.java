@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import it.polimi.mw.compinf.message.TaskMessage;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static it.polimi.mw.compinf.http.TaskRegistryMessages.*;
@@ -72,7 +73,9 @@ public class TaskRegistryActor extends AbstractActor {
     }
 
     private void onGetTasks(GetTasks getTasks) {
-        getSender().tell(new Tasks(tasks), getSelf());
+        // We must be careful not to send out users since it is mutable
+        // so for this response we need to make a defensive copy
+        getSender().tell(new Tasks(List.copyOf(tasks)), getSelf());
     }
 
     private void onCreateTask(CreateTask createTask) {

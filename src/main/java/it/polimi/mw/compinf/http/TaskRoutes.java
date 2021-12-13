@@ -2,15 +2,15 @@ package it.polimi.mw.compinf.http;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
+import akka.actor.Scheduler;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AllDirectives;
-import akka.http.javadsl.server.PathMatchers;
 import akka.http.javadsl.server.Route;
 import akka.pattern.Patterns;
 import it.polimi.mw.compinf.http.TaskRegistryActor.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
@@ -18,20 +18,41 @@ import java.util.concurrent.CompletionStage;
 /**
  * Routes can be defined in separated classes like shown in here
  */
-//#user-routes-class
+//#task-routes-class
 public class TaskRoutes extends AllDirectives {
-    //#user-routes-class
-    final private ActorRef taskRegistryActor;
-    final private LoggingAdapter log;
-
+    private final ActorRef taskRegistryActor;
+    private final static Logger log = LoggerFactory.getLogger(TaskRoutes.class);
+    private final Duration askTimeout;
+    // FIXME: do we need scheduler here in Akka HTTP classic?
+    //        In Akka HTTP typed it is used by AskPattern.ask().
+    //private final Scheduler scheduler;
 
     public TaskRoutes(ActorSystem system, ActorRef taskRegistryActor) {
         this.taskRegistryActor = taskRegistryActor;
-        log = Logging.getLogger(system, this);
+        //scheduler = system.scheduler();
+        askTimeout = system.settings().config().getDuration("comp-inf-app.routes.ask-timeout");
     }
 
-    // Required by the `ask` (?) method below
-    Duration timeout = Duration.ofSeconds(5l); // usually we'd obtain the timeout from the system's configuration
+    private CompletionStage<TaskRegistryActor.Tasks> getTasks() {
+        return Patterns.ask(taskRegistryActor, new TaskRegistryMessages.GetTasks(), askTimeout)
+                .thenApply(TaskRegistryActor.Tasks.class::cast);
+    }
+
+    /*private CompletionStage<TaskRegistry.GetTaskResponse> getTask(int id) {
+        return AskPattern.ask(taskRegistryActor, ref -> new TaskRegistry.GetTask(id, ref), askTimeout, scheduler);
+    }
+
+    private CompletionStage<TaskRegistry.ActionPerformed> deleteTask(int id) {
+        return AskPattern.ask(taskRegistryActor, ref -> new TaskRegistry.DeleteTask(id, ref), askTimeout, scheduler);
+    }
+
+    private CompletionStage<TaskRegistry.Tasks> getTasks() {
+        return AskPattern.ask(taskRegistryActor, TaskRegistry.GetTasks::new, askTimeout, scheduler);
+    }
+
+    private CompletionStage<TaskRegistry.ActionPerformed> createTask(Task task) {
+        return AskPattern.ask(taskRegistryActor, ref -> new TaskRegistry.CreateTask(task, ref), askTimeout, scheduler);
+    }*/
 
     /**
      * This method creates one route (of possibly many more that will be part of your Web App)
@@ -39,8 +60,8 @@ public class TaskRoutes extends AllDirectives {
     //#all-routes
     //#users-get-delete
     public Route taskRoutes() {
-        return route(pathPrefix("tasks", () ->
-                route(
+        return pathPrefix("tasks", () ->
+                concat(
                         getOrPostUsers()
                         /*path(PathMatchers.segment(), id -> route(
                                         getTask(id),
@@ -48,26 +69,33 @@ public class TaskRoutes extends AllDirectives {
                                 )
                         )*/
                 )
-        ));
+        );
     }
 
-    //#tasks-get-post
+    //#tasks-get-create
     private Route getOrPostUsers() {
         return pathEnd(() ->
-                route(
-                        get(() -> {
+                concat(
+                        //#tasks-get
+                        get(() ->
+                                onSuccess(getTasks(),
+                                        tasks -> complete(StatusCodes.OK, tasks, Jackson.marshaller())
+                                )
+                        ),
+                        /*get(() -> {
                             CompletionStage<TaskRegistryActor.Tasks> futureUsers = Patterns
                                     .ask(taskRegistryActor, new TaskRegistryMessages.GetTasks(), timeout)
                                     .thenApply(TaskRegistryActor.Tasks.class::cast);
                             return onSuccess(() -> futureUsers,
                                     users -> complete(StatusCodes.OK, users, Jackson.marshaller()));
-                        }),
+                        }),*/
+                        //#task-create
                         post(() ->
                                 entity(
                                         Jackson.unmarshaller(Task.class),
                                         task -> {
                                             CompletionStage<TaskRegistryMessages.ActionPerformed> taskCreated = Patterns
-                                                    .ask(taskRegistryActor, new TaskRegistryMessages.CreateTask(task), timeout)
+                                                    .ask(taskRegistryActor, new TaskRegistryMessages.CreateTask(task), askTimeout)
                                                     .thenApply(TaskRegistryMessages.ActionPerformed.class::cast);
                                             return onSuccess(() -> taskCreated,
                                                     performed -> {
@@ -78,7 +106,6 @@ public class TaskRoutes extends AllDirectives {
                 )
         );
     }//#tasks-get-post
-
 }
 //#all-routes
 
@@ -122,118 +149,3 @@ public class TaskRoutes extends AllDirectives {
         //#users-delete-logic
     }*/
 //#users-get-delete
-
-
-
-/**
- * This method creates one route (of possibly many more that will be part of your Web App)
- * <p>
- * //#all-routes
- * public Route taskRoutes() {
- * return pathPrefix("tasks", () -> concat(
- * pathEnd(() ->
- * concat(
- * //#tasks-get
- * get(() ->
- * onSuccess(getTasks(),
- * tasks -> complete(StatusCodes.OK, tasks, Jackson.marshaller())
- * )
- * ),
- * //#task-create
- * post(() ->
- * entity(
- * Jackson.unmarshaller(Task.class),
- * task -> onSuccess(createTask(task), performed -> {
- * log.info("Create result: {}", performed.description);
- * return complete(StatusCodes.CREATED, performed, Jackson.marshaller());
- * })
- * )
- * )
- * )
- * )
- * ));
- * }
- * }
- * <p>
- * //#all-routes
- * public Route taskRoutes() {
- * return pathPrefix("tasks", () -> concat(
- * pathEnd(() ->
- * concat(
- * //#tasks-get
- * get(() ->
- * onSuccess(getTasks(),
- * tasks -> complete(StatusCodes.OK, tasks, Jackson.marshaller())
- * )
- * ),
- * //#task-create
- * post(() ->
- * entity(
- * Jackson.unmarshaller(Task.class),
- * task -> onSuccess(createTask(task), performed -> {
- * log.info("Create result: {}", performed.description);
- * return complete(StatusCodes.CREATED, performed, Jackson.marshaller());
- * })
- * )
- * )
- * )
- * )
- * ));
- * }
- * }
- * <p>
- * //#all-routes
- * public Route taskRoutes() {
- * return pathPrefix("tasks", () -> concat(
- * pathEnd(() ->
- * concat(
- * //#tasks-get
- * get(() ->
- * onSuccess(getTasks(),
- * tasks -> complete(StatusCodes.OK, tasks, Jackson.marshaller())
- * )
- * ),
- * //#task-create
- * post(() ->
- * entity(
- * Jackson.unmarshaller(Task.class),
- * task -> onSuccess(createTask(task), performed -> {
- * log.info("Create result: {}", performed.description);
- * return complete(StatusCodes.CREATED, performed, Jackson.marshaller());
- * })
- * )
- * )
- * )
- * )
- * ));
- * }
- * }
- */
-/**
- //#all-routes
- public Route taskRoutes() {
- return pathPrefix("tasks", () -> concat(
- pathEnd(() ->
- concat(
- //#tasks-get
- get(() ->
- onSuccess(getTasks(),
- tasks -> complete(StatusCodes.OK, tasks, Jackson.marshaller())
- )
- ),
- //#task-create
- post(() ->
- entity(
- Jackson.unmarshaller(Task.class),
- task -> onSuccess(createTask(task), performed -> {
- log.info("Create result: {}", performed.description);
- return complete(StatusCodes.CREATED, performed, Jackson.marshaller());
- })
- )
- )
- )
- )
- ));
- }
- }
- */
