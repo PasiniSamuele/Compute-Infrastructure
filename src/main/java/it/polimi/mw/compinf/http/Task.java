@@ -1,24 +1,26 @@
 package it.polimi.mw.compinf.http;
 
-import it.polimi.mw.compinf.message.TaskMessage;
+import static java.util.UUID.randomUUID;
 
 public class Task {
     private final String uuid;
     private int priority;
 
     public Task(int priority) {
-        this.uuid = java.util.UUID.randomUUID().toString();
+        this.uuid = randomUUID().toString();
         this.priority = priority;
     }
 
     public Task() {
-        this.uuid = java.util.UUID.randomUUID().toString();
-        this.priority = 1;
+        this(1);
     }
-
 
     public String getUUID() {
         return uuid;
+    }
+
+    public int getPriority() {
+        return priority;
     }
 
     public Task increasePriority() {

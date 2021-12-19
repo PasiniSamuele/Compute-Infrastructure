@@ -1,15 +1,16 @@
 package it.polimi.mw.compinf;
 
-import java.util.NoSuchElementException;
-import java.util.Optional;
-
 import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import it.polimi.mw.compinf.http.CompressionTask;
 import it.polimi.mw.compinf.http.Task;
-import it.polimi.mw.compinf.message.AnotherTaskMessage;
-import it.polimi.mw.compinf.message.TaskMessage;
+import it.polimi.mw.compinf.http.TaskRegistryMessage;
+
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
+import static it.polimi.mw.compinf.http.TaskRegistryMessage.*;
 
 public class Actor extends AbstractActor {
 	LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
@@ -18,7 +19,7 @@ public class Actor extends AbstractActor {
 	public Receive createReceive() {
 		return receiveBuilder()
 				.match(CompressionTask.class, this::onCompressionTask)
-				.match(AnotherTaskMessage.class, this::onMessageNew).build();
+				.build();
 	}
 
 	private void onCompressionTask(CompressionTask message) throws Exception {
@@ -33,16 +34,17 @@ public class Actor extends AbstractActor {
 		}
 
 		try {
-			Thread.sleep(randInt * 1000L);
+			// FIXME
+			//Thread.sleep(randInt * 1000L);
+			Thread.sleep(10 * 1000L);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 
-		log.info("Finished {}", message.getUUID());
-	}
+		getSender().tell(new TaskExecuted("Sono il worker."), getSelf());
 
-	private void onMessageNew(AnotherTaskMessage message) {
-		System.out.println("Another");
+		log.info("Finished {}", message.getUUID());
+
 	}
 
 	@Override
