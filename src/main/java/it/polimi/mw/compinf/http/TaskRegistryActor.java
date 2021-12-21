@@ -14,6 +14,8 @@ import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
+import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
+import it.polimi.mw.compinf.tasks.CompressionTask;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -47,25 +49,30 @@ public class TaskRegistryActor extends AbstractActor {
                 .match(CreateCompressionMessage.class, this::onCreateCompressionMessage)
                 //.match(CreateConversionTask.class, this::onCreateConversionTask)
                 //.match(CreateDownloadTask.class, this::onCreateDownloadTask)
-                .match(CreateSSE.class, this::onCreateSSE)
-                .match(TaskExecuted.class, this::onTaskExecuted)
+                .match(CreateSSEMessage.class, this::onCreateSSE)
+                .match(TaskExecutedMessage.class, this::onTaskExecuted)
                 .matchAny(o -> log.info("received unknown message"))
                 .build();
     }
 
     private void onCreateCompressionMessage(CreateCompressionMessage ccm) {
-        actorRouter.tell(ccm.getCompressionTask(), getSelf());
-        sourceMap.put(ccm.getCompressionTask().getUUID(), null);
-        getSender().tell(new ActionPerformed(
-                String.format("Task %s submitted successfully.", ccm.getCompressionTask().getUUID())), getSelf());
+        CompressionTask compressionTask = ccm.getCompressionTask();
+
+        actorRouter.tell(compressionTask, getSelf());
+        sourceMap.put(compressionTask.getUUID(), null);
+        System.out.println(compressionTask.getDirectoryName());
+
+        getSender().tell(new GenericMessage(
+                String.format("Task %s submitted successfully.", compressionTask.getUUID())), getSelf());
     }
 
-    private void onCreateSSE(CreateSSE csse) {
+    private void onCreateSSE(CreateSSEMessage csse) {
         UUID uuid = csse.getUUID();
 
         // Check invalid UUID
         if (!sourceMap.containsKey(uuid)) {
-            getSender().tell(new Status.Failure(new RuntimeException(uuid.toString())), getSelf());
+            getSender().tell(new Status.Failure(new InvalidUUIDException(uuid.toString())), getSelf());
+            return;
         }
 
         // Check already created SSE
@@ -85,17 +92,19 @@ public class TaskRegistryActor extends AbstractActor {
 
         Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>> currPair = sourceMap.get(uuid);
 
-        getSender().tell(new GetSSE(currPair.second()), getSelf());
+        getSender().tell(new GetSSEMessage(currPair.second()), getSelf());
         currPair.first().offer("2");
     }
 
     /**
      * Request is coming from backend (worker actor).
+     *
      * @param te Task executed message.
      */
-    private void onTaskExecuted(TaskExecuted te) {
+    private void onTaskExecuted(TaskExecutedMessage te) {
         UUID uuid = te.getUUID();
 
+        // Invalid UUID provided
         if (!sourceMap.containsKey(uuid)) {
             log.error("Invalid task executed with UUID: {}", te.getUUID());
             return;
@@ -103,10 +112,16 @@ public class TaskRegistryActor extends AbstractActor {
 
         Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>> currPair = sourceMap.get(uuid);
 
-        currPair.first().offer("Finished task with UUID: " + te.getUUID());
+        // Nobody connected to SSE for task updates
+        if (currPair == null) {
+            log.info("Nobody connected to SSE for task with UUID: {}", te.getUUID());
+        } else {
+            currPair.first().offer("Finished task with UUID: " + te.getUUID());
+            // Closing SSE
+            currPair.first().complete();
+        }
 
-        // Closing SSE
-        currPair.first().complete();
+        sourceMap.remove(uuid);
     }
 
 }

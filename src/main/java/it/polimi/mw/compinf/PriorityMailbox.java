@@ -4,7 +4,7 @@ import akka.actor.ActorSystem;
 import akka.dispatch.PriorityGenerator;
 import akka.dispatch.UnboundedStablePriorityMailbox;
 import com.typesafe.config.Config;
-import it.polimi.mw.compinf.http.Task;
+import it.polimi.mw.compinf.tasks.Task;
 
 class PriorityMailbox extends UnboundedStablePriorityMailbox {
 

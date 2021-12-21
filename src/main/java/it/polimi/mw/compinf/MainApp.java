@@ -26,7 +26,7 @@ public class MainApp {
                 DeciderBuilder.match(Exception.class, e -> SupervisorStrategy.restart()).build());
 
         return system.actorOf(
-                FromConfig.getInstance().withSupervisorStrategy(strategy).props(Props.create(Actor.class)), "actorRouter");
+                FromConfig.getInstance().withSupervisorStrategy(strategy).props(Props.create(Worker.class)), "actorRouter");
     }
 
     private static void startHttpServer(ActorRef actorRouter) {

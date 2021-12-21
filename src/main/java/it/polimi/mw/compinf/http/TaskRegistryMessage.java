@@ -3,27 +3,27 @@ package it.polimi.mw.compinf.http;
 import akka.NotUsed;
 import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.stream.javadsl.Source;
+import it.polimi.mw.compinf.tasks.CompressionTask;
 
 import java.io.Serializable;
 import java.util.UUID;
 
 public interface TaskRegistryMessage {
+    class GenericMessage implements Serializable {
+        private final String message;
 
-    class ActionPerformed implements Serializable {
-        private final String description;
-
-        public ActionPerformed(String description) {
-            this.description = description;
+        public GenericMessage(String message) {
+            this.message = message;
         }
 
-        public String getDescription() {
-            return description;
+        public String getMessage() {
+            return message;
         }
     }
 
     class CreateCompressionMessage implements Serializable {
         private final CompressionTask compressionTask;
-        
+
         public CreateCompressionMessage(CompressionTask compressionTask) {
             this.compressionTask = compressionTask;
         }
@@ -33,10 +33,10 @@ public interface TaskRegistryMessage {
         }
     }
 
-    class CreateSSE implements Serializable {
+    class CreateSSEMessage implements Serializable {
         private final UUID uuid;
 
-        public CreateSSE(UUID uuid) {
+        public CreateSSEMessage(UUID uuid) {
             this.uuid = uuid;
         }
 
@@ -45,10 +45,10 @@ public interface TaskRegistryMessage {
         }
     }
 
-    class GetSSE implements Serializable {
-        private Source<ServerSentEvent, NotUsed> source;
+    class GetSSEMessage implements Serializable {
+        private final Source<ServerSentEvent, NotUsed> source;
 
-        public GetSSE(Source<ServerSentEvent, NotUsed> source) {
+        public GetSSEMessage(Source<ServerSentEvent, NotUsed> source) {
             this.source = source;
         }
 
@@ -57,12 +57,10 @@ public interface TaskRegistryMessage {
         }
     }
 
-
-
-    class TaskExecuted implements Serializable {
+    class TaskExecutedMessage implements Serializable {
         private final UUID uuid;
 
-        public TaskExecuted(UUID uuid) {
+        public TaskExecutedMessage(UUID uuid) {
             this.uuid = uuid;
         }
 
@@ -70,28 +68,4 @@ public interface TaskRegistryMessage {
             return uuid;
         }
     }
-
-/*    class CreateConversionTask implements Serializable {
-        private final Task task;
-
-        public CreateConversionTask(Task task) {
-            this.task = task;
-        }
-
-        public Task getTask() {
-            return task;
-        }
-    }
-
-    class CreateDownloadTask implements Serializable {
-        private final Task task;
-
-        public CreateDownloadTask(Task task) {
-            this.task = task;
-        }
-
-        public Task getTask() {
-            return task;
-        }
-    }*/
 }

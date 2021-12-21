@@ -1,23 +1,29 @@
-package it.polimi.mw.compinf.http;
+package it.polimi.mw.compinf.tasks;
 
 import java.util.UUID;
 
 
 public class Task {
     private final UUID uuid;
+    private final String directoryName;
     private int priority;
 
-    public Task(int priority) {
+    public Task(String directoryName,int priority) {
         this.uuid = UUID.randomUUID();
+        this.directoryName = directoryName;
         this.priority = priority;
     }
 
-    public Task() {
-        this(1);
+    public Task(String directoryName) {
+        this(directoryName, 1);
     }
 
     public UUID getUUID() {
         return uuid;
+    }
+
+    public String getDirectoryName() {
+        return directoryName;
     }
 
     public int getPriority() {
