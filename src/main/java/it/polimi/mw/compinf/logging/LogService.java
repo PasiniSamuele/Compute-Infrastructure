@@ -1,11 +1,8 @@
-package it.polimi.middleware.project3;
+package it.polimi.mw.compinf.logging;
 
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.hour;
-import static org.apache.spark.sql.functions.month;
 import static org.apache.spark.sql.functions.to_date;
-import static org.apache.spark.sql.functions.weekofyear;
-import static org.apache.spark.sql.functions.year;
 
 import java.util.concurrent.TimeoutException;
 

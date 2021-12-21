@@ -1,4 +1,4 @@
-package it.polimi.middleware.project3;
+package it.polimi.mw.compinf.logging;
 
 import java.util.HashMap;
 import java.util.Map;
