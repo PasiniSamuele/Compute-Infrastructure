@@ -1,13 +1,14 @@
 package it.polimi.mw.compinf.http;
 
-import static java.util.UUID.randomUUID;
+import java.util.UUID;
+
 
 public class Task {
-    private final String uuid;
+    private final UUID uuid;
     private int priority;
 
     public Task(int priority) {
-        this.uuid = randomUUID().toString();
+        this.uuid = UUID.randomUUID();
         this.priority = priority;
     }
 
@@ -15,7 +16,7 @@ public class Task {
         this(1);
     }
 
-    public String getUUID() {
+    public UUID getUUID() {
         return uuid;
     }
 

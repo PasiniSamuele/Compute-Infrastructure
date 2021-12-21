@@ -5,6 +5,7 @@ import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.stream.javadsl.Source;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 public interface TaskRegistryMessage {
 
@@ -33,7 +34,15 @@ public interface TaskRegistryMessage {
     }
 
     class CreateSSE implements Serializable {
+        private final UUID uuid;
 
+        public CreateSSE(UUID uuid) {
+            this.uuid = uuid;
+        }
+
+        public UUID getUUID() {
+            return uuid;
+        }
     }
 
     class GetSSE implements Serializable {
@@ -51,13 +60,13 @@ public interface TaskRegistryMessage {
 
 
     class TaskExecuted implements Serializable {
-        private final String uuid;
+        private final UUID uuid;
 
-        public TaskExecuted(String uuid) {
+        public TaskExecuted(UUID uuid) {
             this.uuid = uuid;
         }
 
-        public String getUUID() {
+        public UUID getUUID() {
             return uuid;
         }
     }

@@ -3,6 +3,8 @@ package it.polimi.mw.compinf.http;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.UUID;
+
 public class CompressionTask extends Task {
     private final double compressionRatio;
 

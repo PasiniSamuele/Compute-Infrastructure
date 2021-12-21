@@ -41,7 +41,7 @@ public class Actor extends AbstractActor {
 			e.printStackTrace();
 		}
 
-		getSender().tell(new TaskExecuted("Sono il worker."), getSelf());
+		getSender().tell(new TaskExecuted(message.getUUID()), getSelf());
 
 		log.info("Finished {}", message.getUUID());
 
