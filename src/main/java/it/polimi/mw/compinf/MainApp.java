@@ -31,7 +31,7 @@ public class MainApp {
 
     private static void startHttpServer(ActorRef actorRouter) {
         // Boot up server using the route as defined below
-        ActorSystem system = akka.actor.ActorSystem.create("httpServer");
+        ActorSystem system = ActorSystem.create("httpServer");
         ActorRef taskRegistryActor = system.actorOf(TaskRegistryActor.props(actorRouter), "taskRegistryActor");
 
         TaskRoutes taskRoutes = new TaskRoutes(system, taskRegistryActor);

@@ -1,6 +1,5 @@
 package it.polimi.mw.compinf.http;
 
-import akka.actor.typed.ActorRef;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
@@ -8,7 +7,6 @@ import org.junit.*;
 import org.junit.runners.MethodSorters;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
-import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 
 
 
