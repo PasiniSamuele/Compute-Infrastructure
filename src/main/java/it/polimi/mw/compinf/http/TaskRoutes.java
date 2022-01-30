@@ -2,7 +2,7 @@ package it.polimi.mw.compinf.http;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.marshallers.jackson.Jackson;
+//import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.marshalling.sse.EventStreamMarshalling;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AllDirectives;
@@ -47,7 +47,7 @@ public class TaskRoutes extends AllDirectives {
     public Route taskRoutes() {
         return pathPrefix("tasks", () ->
                 concat(
-                        compressionTaskRoutes(),
+                        //compressionTaskRoutes(),
                         statusTaskRoutes()//,
                         //conversionTaskRoutes(),
                         //downloadTaskRoutes()
@@ -55,7 +55,7 @@ public class TaskRoutes extends AllDirectives {
         );
     }
 
-    private Route compressionTaskRoutes() {
+/*    private Route compressionTaskRoutes() {
         return pathPrefix("compression", () -> concat(
                 post(() ->
                         entity(
@@ -67,7 +67,7 @@ public class TaskRoutes extends AllDirectives {
                         )
                 )
         ));
-    }
+    }*/
 
     private Route statusTaskRoutes() {
         return get(() ->

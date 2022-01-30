@@ -8,7 +8,6 @@ public class RunnerMio {
 
         WorkerNode w1 = new WorkerNode("25566");
         WorkerNode w2 = new WorkerNode("25567");
-        WorkerNode w3 = new WorkerNode("25568");
 
         Thread.sleep(5000);
 

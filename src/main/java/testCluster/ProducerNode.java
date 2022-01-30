@@ -4,6 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import it.polimi.mw.compinf.tasks.Task;
 
 public class ProducerNode {
     private final ActorRef producer;
@@ -23,8 +24,8 @@ public class ProducerNode {
     }
 
     public void sendMessages() {
-        for (int i = 0; i < 10; i++) {
-            producer.tell(i, ActorRef.noSender());
+        for (int i = 0; i < 12; i++) {
+            producer.tell(new Task(String.valueOf(i)), ActorRef.noSender());
         }
     }
 }

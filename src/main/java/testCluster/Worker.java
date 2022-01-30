@@ -2,6 +2,7 @@ package testCluster;
 
 import akka.actor.AbstractLoggingActor;
 import akka.actor.Props;
+import it.polimi.mw.compinf.tasks.Task;
 
 public class Worker extends AbstractLoggingActor {
     static Props props() {
@@ -11,19 +12,13 @@ public class Worker extends AbstractLoggingActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(Integer.class, this::processMessage)
+                .match(Task.class, this::processMessage)
                 .build();
     }
 
-    public void processMessage(Integer num) {
-        log().info("Received {}", num);
-
-        try {
-            Thread.sleep(num * 1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        log().info("Slept {}", num);
+    public void processMessage(Task msg) throws InterruptedException {
+        log().info("Received {}", msg.getDirectoryName());
+        Thread.sleep(2000);
+        log().info("Slept {}", msg.getDirectoryName());
     }
 }

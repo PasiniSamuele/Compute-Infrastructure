@@ -8,9 +8,10 @@
     <version>1.0</version>
 
     <properties>
-        <akka.version>2.6.17</akka.version>
+        <akka.version>2.6.18</akka.version>
         <akka.http.version>10.2.7</akka.http.version>
-        <scala.binary.version>2.13</scala.binary.version>
+        <scala.version>2.13</scala.version>
+        <jackson.version>2.11.2</jackson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -18,14 +19,14 @@
         <dependencies>
             <dependency>
                 <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-http-bom_${scala.binary.version}</artifactId>
+                <artifactId>akka-http-bom_${scala.version}</artifactId>
                 <version>${akka.http.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-bom_${scala.binary.version}</artifactId>
+                <artifactId>akka-bom_${scala.version}</artifactId>
                 <version>${akka.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -36,49 +37,55 @@
     <dependencies>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-http_${scala.binary.version}</artifactId>
+            <artifactId>akka-http_${scala.version}</artifactId>
         </dependency>
     <!--<dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor-typed_${scala.binary.version}</artifactId>
+            <artifactId>akka-actor-typed_${scala.version}</artifactId>
             <version>${akka.version}</version>
         </dependency>-->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-stream_${scala.binary.version}</artifactId>
+            <artifactId>akka-stream_${scala.version}</artifactId>
             <version>${akka.version}</version>
         </dependency>
-        <dependency>
+<!--        <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-http-jackson_${scala.binary.version}</artifactId>
-        </dependency>
+            <artifactId>akka-http-jackson_${scala.version}</artifactId>
+            <version>${akka.version}</version>
+        </dependency>-->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.7</version>
+            <version>1.2.10</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-http-testkit_${scala.binary.version}</artifactId>
+            <artifactId>akka-http-testkit_${scala.version}</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-cluster-metrics_${scala.binary.version}</artifactId>
+            <artifactId>akka-cluster-metrics_${scala.version}</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-slf4j_${scala.binary.version}</artifactId>
+            <artifactId>akka-slf4j_${scala.version}</artifactId>
             <version>${akka.version}</version>
         </dependency>
         <dependency>
-            <groupId>de.ruedigermoeller</groupId>
-            <artifactId>fst</artifactId>
-            <version>2.56</version>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-serialization-jackson_${scala.version}</artifactId>
+            <version>${akka.version}</version>
         </dependency>
+<!--        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-scala_2.13</artifactId>
+            <version>2.11.4</version>
+        </dependency>-->
         <dependency>
-            <groupId>junit</groupId>*-
+            <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
             <scope>test</scope>

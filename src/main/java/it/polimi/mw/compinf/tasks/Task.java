@@ -3,12 +3,12 @@ package it.polimi.mw.compinf.tasks;
 import java.util.UUID;
 
 
-public class Task {
+public class Task implements CborSerializable {
     private final UUID uuid;
     private final String directoryName;
     private int priority;
 
-    public Task(String directoryName,int priority) {
+    public Task(String directoryName, int priority) {
         this.uuid = UUID.randomUUID();
         this.directoryName = directoryName;
         this.priority = priority;
