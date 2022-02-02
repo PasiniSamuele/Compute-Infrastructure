@@ -1,15 +1,19 @@
 package it.polimi.mw.compinf.actors;
 
 import akka.actor.AbstractLoggingActor;
+import akka.actor.ActorRef;
 import akka.actor.Props;
 import it.polimi.mw.compinf.http.TaskRegistryMessage;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 import it.polimi.mw.compinf.tasks.Task;
+import it.polimi.mw.compinf.tasks.TaskResult;
 
 import java.util.Optional;
 import java.util.UUID;
 
 public class WorkerActor extends AbstractLoggingActor {
+	ActorRef storeKeeper = getContext().actorSelection("/user/storeKeeper").anchor();
+
 	public static Props props() {
 		return Props.create(WorkerActor.class);
 	}
@@ -29,14 +33,12 @@ public class WorkerActor extends AbstractLoggingActor {
 
 		Thread.sleep(10000);
 
-		onFinishedTask("test".getBytes(), message.getDirectoryName());
-
-		log().info("Finished {}", uuid);
-		getSender().tell(new TaskRegistryMessage.TaskExecutedMessage(uuid), getSelf());
+		onFinishedTask(uuid, "test".getBytes(), message.getDirectoryName());
 	}
 
-	private void onFinishedTask(byte[] file, String directoryName) {
-		// TODO Send file to StoreKeeper node
+	private void onFinishedTask(UUID uuid, byte[] file, String directoryName) {
+		TaskResult taskResult = new TaskResult(uuid, file, directoryName);
+		storeKeeper.tell(taskResult, self());
 	}
 
 	@Override
