@@ -19,9 +19,9 @@ import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 import static it.polimi.mw.compinf.http.TaskRegistryMessage.*;
@@ -33,7 +33,7 @@ public class TaskRegistryActor extends AbstractActor {
     private final Materializer mat;
 
     public TaskRegistryActor() {
-        this.sourceMap = new HashMap<>();
+        this.sourceMap = new ConcurrentHashMap<>();
         this.mat = Materializer.createMaterializer(getContext());
     }
 
