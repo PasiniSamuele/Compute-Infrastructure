@@ -19,21 +19,22 @@ import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 import static it.polimi.mw.compinf.http.TaskRegistryMessage.*;
 
 public class TaskRegistryActor extends AbstractActor {
 
+    // TODO Concurrent hash map
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
     private final Map<UUID, Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>> sourceMap;
     private final Materializer mat;
 
     public TaskRegistryActor() {
-        this.sourceMap = new ConcurrentHashMap<>();
+        this.sourceMap = new HashMap<>();
         this.mat = Materializer.createMaterializer(getContext());
     }
 
