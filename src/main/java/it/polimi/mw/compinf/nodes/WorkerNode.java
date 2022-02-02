@@ -15,12 +15,12 @@ public class WorkerNode extends Node {
     private final static int SUPERVISOR_PERIOD = 1;
 
     public WorkerNode(String port) {
-        super(port);
+        super(port, "worker");
     }
 
     @Override
-    void startNode() {
-        ActorSystem actorSystem = ActorSystem.create("cluster", setupClusterNodeConfig(port));
+    void startNode(String port, String role) {
+        ActorSystem actorSystem = ActorSystem.create("cluster", setupClusterNodeConfig(port, role));
 
         // Creating supervision strategy for the local router
         Duration duration = Duration.create(SUPERVISOR_PERIOD, TimeUnit.MINUTES);

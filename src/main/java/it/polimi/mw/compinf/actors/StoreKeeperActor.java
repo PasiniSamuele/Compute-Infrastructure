@@ -1,7 +1,7 @@
 package it.polimi.mw.compinf.actors;
 
 import akka.actor.AbstractLoggingActor;
-import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Props;
 import it.polimi.mw.compinf.http.TaskRegistryMessage;
 import it.polimi.mw.compinf.tasks.TaskResult;
@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class StoreKeeperActor extends AbstractLoggingActor {
-    ActorRef registryActor = getContext().actorSelection("/user/taskRegistryActor").anchor();
+    ActorSelection registryActor = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/taskRegistryActor");
 
     public static Props props() {
         return Props.create(StoreKeeperActor.class);

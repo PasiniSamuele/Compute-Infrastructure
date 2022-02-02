@@ -11,13 +11,13 @@ import java.util.concurrent.CompletionStage;
 
 public class HttpNode extends Node {
     public HttpNode(String port) {
-        super(port);
+        super(port, "http");
     }
 
     @Override
-    void startNode() {
+    void startNode(String port, String role) {
         // Boot up server using the route as defined below
-        ActorSystem system = ActorSystem.create("cluster", setupClusterNodeConfig(port));
+        ActorSystem system = ActorSystem.create("cluster", setupClusterNodeConfig(port, role));
 
         ActorRef taskRegistryActor = system.actorOf(TaskRegistryActor.props(), "taskRegistryActor");
 

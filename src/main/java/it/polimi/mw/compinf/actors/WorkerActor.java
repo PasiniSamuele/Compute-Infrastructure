@@ -1,9 +1,8 @@
 package it.polimi.mw.compinf.actors;
 
 import akka.actor.AbstractLoggingActor;
-import akka.actor.ActorRef;
+import akka.actor.ActorSelection;
 import akka.actor.Props;
-import it.polimi.mw.compinf.http.TaskRegistryMessage;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 import it.polimi.mw.compinf.tasks.Task;
 import it.polimi.mw.compinf.tasks.TaskResult;
@@ -12,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class WorkerActor extends AbstractLoggingActor {
-	ActorRef storeKeeper = getContext().actorSelection("/user/storeKeeper").anchor();
+	ActorSelection storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:7777/user/storeKeeper");
 
 	public static Props props() {
 		return Props.create(WorkerActor.class);
