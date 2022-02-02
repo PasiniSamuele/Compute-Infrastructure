@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class WorkerActor extends AbstractLoggingActor {
-	ActorSelection storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:7777/user/storeKeeper");
+	ActorSelection storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/storeKeeper");
 
 	public static Props props() {
 		return Props.create(WorkerActor.class);

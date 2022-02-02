@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class StoreKeeperActor extends AbstractLoggingActor {
-    ActorSelection registryActor = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/taskRegistryActor");
+    ActorSelection registryActor = getContext().actorSelection("akka://cluster@127.0.0.1:7777/user/taskRegistryActor");
 
     public static Props props() {
         return Props.create(StoreKeeperActor.class);
