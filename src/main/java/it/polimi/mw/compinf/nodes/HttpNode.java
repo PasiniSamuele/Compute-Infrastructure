@@ -3,16 +3,19 @@ package it.polimi.mw.compinf.nodes;
 import akka.actor.*;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import it.polimi.mw.compinf.http.TaskRegistryActor;
 import it.polimi.mw.compinf.http.TaskRoutes;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletionStage;
 
-public class HttpNode {
+public class HttpNode extends Node {
     public HttpNode(String port) {
+        super(port);
+    }
+
+    @Override
+    void startNode() {
         // Boot up server using the route as defined below
         ActorSystem system = ActorSystem.create("cluster", setupClusterNodeConfig(port));
 
@@ -30,12 +33,5 @@ public class HttpNode {
                 system.terminate();
             }
         });
-    }
-
-    private static Config setupClusterNodeConfig(String port) {
-        return ConfigFactory.parseString(
-                        String.format("akka.remote.netty.tcp.port=%s%n", port) +
-                                String.format("akka.remote.artery.canonical.port=%s%n", port))
-                .withFallback(ConfigFactory.load());
     }
 }
