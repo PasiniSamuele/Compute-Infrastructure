@@ -9,6 +9,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.japi.Pair;
+import akka.routing.FromConfig;
 import akka.stream.Materializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
@@ -31,17 +32,16 @@ public class TaskRegistryActor extends AbstractActor {
     private final Map<UUID, Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>> sourceMap;
     private final Materializer mat;
 
-    public TaskRegistryActor(ActorRef actorRouter) {
-        this.actorRouter = actorRouter;
+    public TaskRegistryActor() {
         this.sourceMap = new HashMap<>();
         this.mat = Materializer.createMaterializer(getContext());
     }
 
-    public static Props props(ActorRef actorRouter) {
-        return Props.create(TaskRegistryActor.class, actorRouter);
+    public static Props props() {
+        return Props.create(TaskRegistryActor.class);
     }
 
-    private final ActorRef actorRouter;
+    private final ActorRef actorRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
 
     @Override
     public Receive createReceive() {

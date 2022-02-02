@@ -1,4 +1,4 @@
-package testCluster;
+package it.polimi.mw.compinf.nodes;
 
 import akka.actor.ActorSystem;
 import akka.actor.OneForOneStrategy;
@@ -7,13 +7,14 @@ import akka.japi.pf.DeciderBuilder;
 import akka.routing.FromConfig;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import it.polimi.mw.compinf.actors.WorkerActor;
 import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
 
 public class WorkerNode {
-    private final int SUPERVISOR_RETRIES = 10;
-    private final int SUPERVISOR_PERIOD = 1;
+    private final static int SUPERVISOR_RETRIES = 10;
+    private final static int SUPERVISOR_PERIOD = 1;
 
     public WorkerNode(String port) {
         ActorSystem actorSystem = ActorSystem.create("cluster", setupClusterNodeConfig(port));
@@ -26,9 +27,9 @@ public class WorkerNode {
         // Creating the local router (this is a balancing pool)
         actorSystem.actorOf(
                 FromConfig
-                .getInstance()
-                .withSupervisorStrategy(strategy)
-                .props(Worker.props()),
+                        .getInstance()
+                        .withSupervisorStrategy(strategy)
+                        .props(WorkerActor.props()),
                 "workerRouter");
 
         actorSystem.log().info("Akka node {}", actorSystem.provider().getDefaultAddress());

@@ -1,4 +1,4 @@
-package it.polimi.mw.compinf;
+package it.polimi.mw.compinf.util;
 
 import akka.actor.ActorSystem;
 import akka.dispatch.PriorityGenerator;

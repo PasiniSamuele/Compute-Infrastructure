@@ -3,6 +3,7 @@ package it.polimi.mw.compinf.http;
 import akka.NotUsed;
 import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.stream.javadsl.Source;
+import it.polimi.mw.compinf.tasks.CborSerializable;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 
 import java.io.Serializable;
@@ -57,7 +58,7 @@ public interface TaskRegistryMessage {
         }
     }
 
-    class TaskExecutedMessage implements Serializable {
+    class TaskExecutedMessage implements CborSerializable, Serializable {
         private final UUID uuid;
 
         public TaskExecutedMessage(UUID uuid) {
