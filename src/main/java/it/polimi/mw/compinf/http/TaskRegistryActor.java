@@ -19,22 +19,22 @@ import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 import static it.polimi.mw.compinf.http.TaskRegistryMessage.*;
 
 public class TaskRegistryActor extends AbstractActor {
 
-    // TODO Concurrent hash map
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
-    private final Map<UUID, Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>> sourceMap;
+    private final Map<UUID, Optional<Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>>> sourceMap;
     private final Materializer mat;
 
     public TaskRegistryActor() {
-        this.sourceMap = new HashMap<>();
+        this.sourceMap = new ConcurrentHashMap<>();
         this.mat = Materializer.createMaterializer(getContext());
     }
 
@@ -60,7 +60,7 @@ public class TaskRegistryActor extends AbstractActor {
         CompressionTask compressionTask = ccm.getCompressionTask();
 
         actorRouter.tell(compressionTask, getSelf());
-        sourceMap.put(compressionTask.getUUID(), null);
+        sourceMap.put(compressionTask.getUUID(), Optional.empty());
         System.out.println(compressionTask.getDirectoryName());
 
         getSender().tell(new GenericMessage(
@@ -77,7 +77,7 @@ public class TaskRegistryActor extends AbstractActor {
         }
 
         // Check already created SSE
-        if (sourceMap.get(uuid) == null) {
+        if (sourceMap.get(uuid).isEmpty()) {
             Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>> sourcePair = Source.<String>queue(100, OverflowStrategy.dropHead())
                     .map(ServerSentEvent::create)
                     .keepAlive(Duration.ofSeconds(1), ServerSentEvent::heartbeat)
@@ -88,10 +88,10 @@ public class TaskRegistryActor extends AbstractActor {
                     .to(Sink.ignore())
                     .run(mat);
 
-            sourceMap.put(uuid, sourcePair);
+            sourceMap.put(uuid, Optional.of(sourcePair));
         }
 
-        Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>> currPair = sourceMap.get(uuid);
+        Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>> currPair = sourceMap.get(uuid).get();
 
         getSender().tell(new GetSSEMessage(currPair.second()), getSelf());
         currPair.first().offer("2");
@@ -111,15 +111,14 @@ public class TaskRegistryActor extends AbstractActor {
             return;
         }
 
-        Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>> currPair = sourceMap.get(uuid);
-
-        // Nobody connected to SSE for task updates
-        if (currPair == null) {
-            log.info("Nobody connected to SSE for task with UUID: {}", te.getUUID());
-        } else {
+        if (sourceMap.get(uuid).isPresent()) {
+            Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>> currPair = sourceMap.get(uuid).get();
             currPair.first().offer("Finished task with UUID: " + te.getUUID());
             // Closing SSE
             currPair.first().complete();
+        } else {
+            // Nobody connected to SSE for task updates
+            log.info("Nobody connected to SSE for task with UUID: {}", te.getUUID());
         }
 
         sourceMap.remove(uuid);
