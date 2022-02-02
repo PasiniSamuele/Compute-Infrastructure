@@ -133,7 +133,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.6.0</version>
                 <configuration>
-                    <mainClass>it.polimi.mw.compinf.nodes.HttpNode</mainClass>
+                    <mainClass>it.polimi.mw.compinf.MainApp</mainClass>
                 </configuration>
             </plugin>
         </plugins>

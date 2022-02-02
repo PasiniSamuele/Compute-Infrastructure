@@ -28,6 +28,7 @@ import static it.polimi.mw.compinf.http.TaskRegistryMessage.*;
 
 public class TaskRegistryActor extends AbstractActor {
 
+    // TODO Concurrent hash map
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
     private final Map<UUID, Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>> sourceMap;
     private final Materializer mat;
