@@ -3,56 +3,88 @@ package it.polimi.mw.compinf.actors;
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorSelection;
 import akka.actor.Props;
-import it.polimi.mw.compinf.tasks.CompressionTask;
-import it.polimi.mw.compinf.tasks.Task;
-import it.polimi.mw.compinf.tasks.TaskResult;
+import it.polimi.mw.compinf.tasks.*;
 
 import java.util.Optional;
 import java.util.UUID;
 
 public class WorkerActor extends AbstractLoggingActor {
-	ActorSelection storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/storeKeeper");
+    private final ActorSelection storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/storeKeeper");
 
-	public static Props props() {
-		return Props.create(WorkerActor.class);
-	}
+    private final static String compressionOutput = "Compression task executed!%nTask UUID: %s%nCompression Ratio: %s";
+    private final static String conversionOutput = "Conversion task executed!%nTask UUID: %s%nTarget Format: %s";
+    private final static String primeOutput = "Conversion task executed!%nTask UUID: %s%nTarget Format: %s";
 
-	@Override
-	public Receive createReceive() {
-		return receiveBuilder()
-				.match(CompressionTask.class, this::onCompressionTask)
-				.build();
-	}
+    public static Props props() {
+        return Props.create(WorkerActor.class);
+    }
 
-	private void onCompressionTask(CompressionTask message) throws Exception {
-		UUID uuid = message.getUUID();
-		log().info("Received {}", uuid);
+    @Override
+    public Receive createReceive() {
+        // TODO Task Failure
+        return receiveBuilder()
+                .match(CompressionTask.class, this::onCompressionTask)
+                .match(ConversionTask.class, this::onConversionTask)
+                .match(PrimeTask.class, this::onPrimeTask)
+                .build();
+    }
 
-		// TODO Dummy compression
+    private void onCompressionTask(CompressionTask task) throws Exception {
+        UUID uuid = task.getUUID();
+        log().info("Received Compression {}", uuid);
 
-		Thread.sleep(10000);
+        // TODO Publish starting
 
-		onFinishedTask(uuid, "test".getBytes(), message.getDirectoryName());
-	}
+        // Dummy compression
+        Thread.sleep(10000);
 
-	private void onFinishedTask(UUID uuid, byte[] file, String directoryName) {
-		TaskResult taskResult = new TaskResult(uuid, file, directoryName);
-		storeKeeper.tell(taskResult, self());
-	}
+        String taskString = String.format(compressionOutput, uuid, task.getCompressionRatio());
+        onFinishedTask(uuid, taskString.getBytes(), task.getDirectoryName());
+    }
 
-	@Override
-	public void preRestart(Throwable reason, Optional<Object> message) {
-		if (message.isPresent()) {
-			try {
-				Task taskMessage = (Task) message.get();
+    private void onConversionTask(ConversionTask task) throws Exception {
+        UUID uuid = task.getUUID();
+        log().info("Received Conversion {}", uuid);
 
-				log().warning("Restarting task {} due to failure", taskMessage.getDirectoryName());
+        // TODO Publish starting
 
-				// Resending the message with a higher priority in order to process it first
-				getContext().getSelf().tell(taskMessage.increasePriority(), getContext().getSender());
-			} catch (ClassCastException e) {
-				log().error("Invalid task message");
-			}
-		}
-	}
+        // Dummy conversion
+        Thread.sleep(10000);
+
+        String taskString = String.format(conversionOutput, uuid, task.getTargetFormat());
+        onFinishedTask(uuid, taskString.getBytes(), task.getDirectoryName());
+    }
+
+    private void onPrimeTask(PrimeTask task) throws Exception {
+        UUID uuid = task.getUUID();
+        log().info("Received Prime {}", uuid);
+
+        // TODO Publish starting
+
+        // Dummy prime
+        Thread.sleep(10000);
+
+        String taskString = String.format(primeOutput, uuid, task.getUpperBound());
+        onFinishedTask(uuid, taskString.getBytes(), task.getDirectoryName());
+    }
+
+    private void onFinishedTask(UUID uuid, byte[] file, String directoryName) {
+        TaskResult taskResult = new TaskResult(uuid, file, directoryName);
+        storeKeeper.tell(taskResult, self());
+    }
+
+    @Override
+    public void preRestart(Throwable reason, Optional<Object> message) {
+        if (message.isPresent()) {
+            try {
+                Task taskMessage = (Task) message.get();
+                log().warning("Restarting task {} due to failure", taskMessage.getDirectoryName());
+
+                // Resending the message with a higher priority in order to process it first
+                getContext().getSelf().tell(taskMessage.increasePriority(), getContext().getSender());
+            } catch (ClassCastException e) {
+                log().error("Invalid task message");
+            }
+        }
+    }
 }

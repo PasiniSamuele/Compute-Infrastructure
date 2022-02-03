@@ -1,4 +1,4 @@
-package it.polimi.mw.compinf.tasks;
+package it.polimi.mw.compinf.util;
 
 /**
  * Marker interface for Cbor serialization.

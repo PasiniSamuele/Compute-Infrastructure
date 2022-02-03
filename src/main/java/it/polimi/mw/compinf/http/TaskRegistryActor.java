@@ -17,6 +17,8 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
 import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
 import it.polimi.mw.compinf.tasks.CompressionTask;
+import it.polimi.mw.compinf.tasks.ConversionTask;
+import it.polimi.mw.compinf.tasks.PrimeTask;
 
 import java.time.Duration;
 import java.util.Map;
@@ -48,8 +50,8 @@ public class TaskRegistryActor extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(CreateCompressionMessage.class, this::onCreateCompressionMessage)
-                //.match(CreateConversionTask.class, this::onCreateConversionTask)
-                //.match(CreateDownloadTask.class, this::onCreateDownloadTask)
+                .match(CreateConversionMessage.class, this::onCreateConversionMessage)
+                .match(CreatePrimeMessage.class, this::onCreatePrimeMessage)
                 .match(CreateSSEMessage.class, this::onCreateSSE)
                 .match(TaskExecutedMessage.class, this::onTaskExecuted)
                 .matchAny(o -> log.info("received unknown message"))
@@ -63,8 +65,33 @@ public class TaskRegistryActor extends AbstractActor {
         sourceMap.put(compressionTask.getUUID(), Optional.empty());
         System.out.println(compressionTask.getDirectoryName());
 
+        // TODO Publish pending
         getSender().tell(new GenericMessage(
                 String.format("Task %s submitted successfully.", compressionTask.getUUID())), getSelf());
+    }
+
+    private void onCreateConversionMessage(CreateConversionMessage ccm) {
+        ConversionTask conversionTask = ccm.getConversionTask();
+
+        actorRouter.tell(conversionTask, getSelf());
+        sourceMap.put(conversionTask.getUUID(), Optional.empty());
+        System.out.println(conversionTask.getDirectoryName());
+
+        // TODO Publish pending
+        getSender().tell(new GenericMessage(
+                String.format("Task %s submitted successfully.", conversionTask.getUUID())), getSelf());
+    }
+
+    private void onCreatePrimeMessage(CreatePrimeMessage cpm) {
+        PrimeTask primeTask = cpm.getPrimeTask();
+
+        actorRouter.tell(primeTask, getSelf());
+        sourceMap.put(primeTask.getUUID(), Optional.empty());
+        System.out.println(primeTask.getDirectoryName());
+
+        // TODO Publish pending
+        getSender().tell(new GenericMessage(
+                String.format("Task %s submitted successfully.", primeTask.getUUID())), getSelf());
     }
 
     private void onCreateSSE(CreateSSEMessage csse) {

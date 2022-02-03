@@ -10,6 +10,8 @@ import akka.http.javadsl.server.PathMatchers;
 import akka.http.javadsl.server.Route;
 import akka.pattern.Patterns;
 import it.polimi.mw.compinf.tasks.CompressionTask;
+import it.polimi.mw.compinf.tasks.ConversionTask;
+import it.polimi.mw.compinf.tasks.PrimeTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,16 @@ public class TaskRoutes extends AllDirectives {
                 .thenApply(TaskRegistryMessage.GenericMessage.class::cast);
     }
 
+    private CompletionStage<TaskRegistryMessage.GenericMessage> createConversionMessage(ConversionTask task) {
+        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateConversionMessage(task), askTimeout)
+                .thenApply(TaskRegistryMessage.GenericMessage.class::cast);
+    }
+
+    private CompletionStage<TaskRegistryMessage.GenericMessage> createPrimeMessage(PrimeTask task) {
+        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreatePrimeMessage(task), askTimeout)
+                .thenApply(TaskRegistryMessage.GenericMessage.class::cast);
+    }
+
     private CompletionStage<TaskRegistryMessage.GetSSEMessage> getSSESource(UUID uuid) {
         return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateSSEMessage(uuid), askTimeout)
                 .thenApply(TaskRegistryMessage.GetSSEMessage.class::cast)
@@ -47,10 +59,25 @@ public class TaskRoutes extends AllDirectives {
     public Route taskRoutes() {
         return pathPrefix("tasks", () ->
                 concat(
+                        statusTaskRoutes(),
                         compressionTaskRoutes(),
-                        statusTaskRoutes()//,
-                        //conversionTaskRoutes(),
-                        //downloadTaskRoutes()
+                        conversionTaskRoutes(),
+                        primeTaskRoutes()
+                )
+        );
+    }
+
+    private Route statusTaskRoutes() {
+        return get(() ->
+                pathSuffix(PathMatchers.uuidSegment(), uuid ->
+                        onSuccess(getSSESource(uuid), sse -> {
+                            if (sse == null) {
+                                return complete(StatusCodes.BAD_REQUEST, "Invalid SSE request with UUID " + uuid);
+                            }
+
+                            log.info("Updating SSE events: {}", sse.getSource().toString());
+                            return completeOK(sse.getSource(), EventStreamMarshalling.toEventStream());
+                        })
                 )
         );
     }
@@ -69,18 +96,31 @@ public class TaskRoutes extends AllDirectives {
         ));
     }
 
-    private Route statusTaskRoutes() {
-        return get(() ->
-                pathSuffix(PathMatchers.uuidSegment(), uuid ->
-                        onSuccess(getSSESource(uuid), sse -> {
-                            if (sse == null) {
-                                return complete(StatusCodes.BAD_REQUEST, "Invalid SSE request with UUID " + uuid);
-                            }
-
-                            log.info("Updating SSE events: {}", sse.getSource().toString());
-                            return completeOK(sse.getSource(), EventStreamMarshalling.toEventStream());
-                        })
+    private Route conversionTaskRoutes() {
+        return pathPrefix("conversion", () -> concat(
+                post(() ->
+                        entity(
+                                Jackson.unmarshaller(CompressionTask.class),
+                                task -> onSuccess(createCompressionMessage(task), msg -> {
+                                    log.info("Conversion task accepted with UUID: {}", msg.getMessage());
+                                    return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
+                                })
+                        )
                 )
-        );
+        ));
+    }
+
+    private Route primeTaskRoutes() {
+        return pathPrefix("prime", () -> concat(
+                post(() ->
+                        entity(
+                                Jackson.unmarshaller(PrimeTask.class),
+                                task -> onSuccess(createPrimeMessage(task), msg -> {
+                                    log.info("Prime task accepted with UUID: {}", msg.getMessage());
+                                    return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
+                                })
+                        )
+                )
+        ));
     }
 }

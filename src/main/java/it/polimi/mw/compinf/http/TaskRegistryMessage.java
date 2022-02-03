@@ -4,10 +4,11 @@ import akka.NotUsed;
 import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import it.polimi.mw.compinf.tasks.CborSerializable;
+import it.polimi.mw.compinf.tasks.PrimeTask;
+import it.polimi.mw.compinf.util.CborSerializable;
 import it.polimi.mw.compinf.tasks.CompressionTask;
+import it.polimi.mw.compinf.tasks.ConversionTask;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 public interface TaskRegistryMessage {
@@ -32,6 +33,30 @@ public interface TaskRegistryMessage {
 
         public CompressionTask getCompressionTask() {
             return compressionTask;
+        }
+    }
+
+    class CreatePrimeMessage implements CborSerializable {
+        private final PrimeTask primeTask;
+
+        public CreatePrimeMessage(PrimeTask primeTask) {
+            this.primeTask = primeTask;
+        }
+
+        public PrimeTask getPrimeTask() {
+            return primeTask;
+        }
+    }
+
+    class CreateConversionMessage implements CborSerializable {
+        private final ConversionTask conversionTask;
+
+        public CreateConversionMessage(ConversionTask conversionTask) {
+            this.conversionTask = conversionTask;
+        }
+
+        public ConversionTask getConversionTask() {
+            return conversionTask;
         }
     }
 

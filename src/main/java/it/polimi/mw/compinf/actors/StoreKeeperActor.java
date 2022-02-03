@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class StoreKeeperActor extends AbstractLoggingActor {
-    ActorSelection registryActor = getContext().actorSelection("akka://cluster@127.0.0.1:7777/user/taskRegistryActor");
+    private final ActorSelection registryActor = getContext().actorSelection("akka://cluster@127.0.0.1:7777/user/taskRegistryActor");
 
     public static Props props() {
         return Props.create(StoreKeeperActor.class);
@@ -30,6 +30,8 @@ public class StoreKeeperActor extends AbstractLoggingActor {
         try {
             Files.createDirectories(Path.of(result.getDirectoryName()));
             Files.write(Path.of(result.getDirectoryName() + File.separator + result.getUuid()), result.getFile());
+
+            // TODO Publish completed
 
             registryActor.tell(new TaskRegistryMessage.TaskExecutedMessage(result.getUuid()), self());
 

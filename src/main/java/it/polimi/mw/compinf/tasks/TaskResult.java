@@ -1,5 +1,7 @@
 package it.polimi.mw.compinf.tasks;
 
+import it.polimi.mw.compinf.util.CborSerializable;
+
 import java.util.UUID;
 
 public class TaskResult implements CborSerializable {
