@@ -4,16 +4,33 @@ import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorSelection;
 import akka.actor.Props;
 import it.polimi.mw.compinf.tasks.*;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.Optional;
+import java.util.Properties;
 import java.util.UUID;
 
 public class WorkerActor extends AbstractLoggingActor {
-    private final ActorSelection storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/storeKeeper");
+    private final ActorSelection storeKeeper;
+    private final KafkaProducer<String, String> kafkaProducer;
 
     private final static String compressionOutput = "Compression task executed!%nTask UUID: %s%nCompression Ratio: %s";
     private final static String conversionOutput = "Conversion task executed!%nTask UUID: %s%nTarget Format: %s";
     private final static String primeOutput = "Conversion task executed!%nTask UUID: %s%nTarget Format: %s";
+
+    public WorkerActor() {
+        this.storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/storeKeeper");
+
+        final Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        this.kafkaProducer = new KafkaProducer<>(props);
+    }
 
     public static Props props() {
         return Props.create(WorkerActor.class);
@@ -33,7 +50,7 @@ public class WorkerActor extends AbstractLoggingActor {
         UUID uuid = task.getUUID();
         log().info("Received Compression {}", uuid);
 
-        // TODO Publish starting
+        kafkaProducer.send(new ProducerRecord<>("starting", null, task.getUUID().toString()));
 
         // Dummy compression
         Thread.sleep(10000);
@@ -46,7 +63,7 @@ public class WorkerActor extends AbstractLoggingActor {
         UUID uuid = task.getUUID();
         log().info("Received Conversion {}", uuid);
 
-        // TODO Publish starting
+        kafkaProducer.send(new ProducerRecord<>("starting", null, task.getUUID().toString()));
 
         // Dummy conversion
         Thread.sleep(10000);
@@ -59,7 +76,7 @@ public class WorkerActor extends AbstractLoggingActor {
         UUID uuid = task.getUUID();
         log().info("Received Prime {}", uuid);
 
-        // TODO Publish starting
+        kafkaProducer.send(new ProducerRecord<>("starting", null, task.getUUID().toString()));
 
         // Dummy prime
         Thread.sleep(10000);

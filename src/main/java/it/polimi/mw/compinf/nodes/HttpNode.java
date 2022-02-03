@@ -22,7 +22,7 @@ public class HttpNode extends Node {
         ActorRef taskRegistryActor = system.actorOf(TaskRegistryActor.props(), "taskRegistryActor");
 
         TaskRoutes taskRoutes = new TaskRoutes(system, taskRegistryActor);
-        CompletionStage<ServerBinding> futureBinding = Http.get(system).newServerAt("localhost", 8080).bind(taskRoutes.taskRoutes());
+        CompletionStage<ServerBinding> futureBinding = Http.get(system).newServerAt("localhost", 40000).bind(taskRoutes.taskRoutes());
 
         futureBinding.whenComplete((binding, exception) -> {
             if (binding != null) {

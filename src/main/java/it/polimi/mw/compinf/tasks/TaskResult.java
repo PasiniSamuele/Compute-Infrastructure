@@ -15,7 +15,7 @@ public class TaskResult implements CborSerializable {
         this.file = file;
     }
 
-    public UUID getUuid() {
+    public UUID getUUID() {
         return uuid;
     }
 

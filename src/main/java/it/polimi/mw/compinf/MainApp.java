@@ -11,6 +11,6 @@ public class MainApp {
         new StoreKeeperNode("25565");
 
         new WorkerNode("30001");
-        new WorkerNode("30002");
+        //new WorkerNode("30002");
     }
 }

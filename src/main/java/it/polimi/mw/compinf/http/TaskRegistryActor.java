@@ -19,10 +19,15 @@ import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 import it.polimi.mw.compinf.tasks.ConversionTask;
 import it.polimi.mw.compinf.tasks.PrimeTask;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,6 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import static it.polimi.mw.compinf.http.TaskRegistryMessage.*;
 
 public class TaskRegistryActor extends AbstractActor {
+    private final ActorRef actorRouter;
+    private final KafkaProducer<String, String> kafkaProducer;
 
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
     private final Map<UUID, Optional<Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>>> sourceMap;
@@ -38,13 +45,19 @@ public class TaskRegistryActor extends AbstractActor {
     public TaskRegistryActor() {
         this.sourceMap = new ConcurrentHashMap<>();
         this.mat = Materializer.createMaterializer(getContext());
+        this.actorRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
+
+        final Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        this.kafkaProducer = new KafkaProducer<>(props);
     }
 
     public static Props props() {
         return Props.create(TaskRegistryActor.class);
     }
-
-    private final ActorRef actorRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
 
     @Override
     public Receive createReceive() {
@@ -65,9 +78,10 @@ public class TaskRegistryActor extends AbstractActor {
         sourceMap.put(compressionTask.getUUID(), Optional.empty());
         System.out.println(compressionTask.getDirectoryName());
 
-        // TODO Publish pending
+        kafkaProducer.send(new ProducerRecord<>("pending", null, compressionTask.getUUID().toString()));
+
         getSender().tell(new GenericMessage(
-                String.format("Task %s submitted successfully.", compressionTask.getUUID())), getSelf());
+                String.format("Task compression %s submitted successfully.", compressionTask.getUUID())), getSelf());
     }
 
     private void onCreateConversionMessage(CreateConversionMessage ccm) {
@@ -77,9 +91,10 @@ public class TaskRegistryActor extends AbstractActor {
         sourceMap.put(conversionTask.getUUID(), Optional.empty());
         System.out.println(conversionTask.getDirectoryName());
 
-        // TODO Publish pending
+        kafkaProducer.send(new ProducerRecord<>("pending", null, conversionTask.getUUID().toString()));
+
         getSender().tell(new GenericMessage(
-                String.format("Task %s submitted successfully.", conversionTask.getUUID())), getSelf());
+                String.format("Task conversion %s submitted successfully.", conversionTask.getUUID())), getSelf());
     }
 
     private void onCreatePrimeMessage(CreatePrimeMessage cpm) {
@@ -89,9 +104,10 @@ public class TaskRegistryActor extends AbstractActor {
         sourceMap.put(primeTask.getUUID(), Optional.empty());
         System.out.println(primeTask.getDirectoryName());
 
-        // TODO Publish pending
+        kafkaProducer.send(new ProducerRecord<>("pending", null, primeTask.getUUID().toString()));
+
         getSender().tell(new GenericMessage(
-                String.format("Task %s submitted successfully.", primeTask.getUUID())), getSelf());
+                String.format("Task prime %s submitted successfully.", primeTask.getUUID())), getSelf());
     }
 
     private void onCreateSSE(CreateSSEMessage csse) {
