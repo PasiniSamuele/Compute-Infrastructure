@@ -76,7 +76,6 @@ public class TaskRegistryActor extends AbstractActor {
 
         actorRouter.tell(compressionTask, getSelf());
         sourceMap.put(compressionTask.getUUID(), Optional.empty());
-        System.out.println(compressionTask.getDirectoryName());
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, compressionTask.getUUID().toString()));
 
@@ -89,7 +88,6 @@ public class TaskRegistryActor extends AbstractActor {
 
         actorRouter.tell(conversionTask, getSelf());
         sourceMap.put(conversionTask.getUUID(), Optional.empty());
-        System.out.println(conversionTask.getDirectoryName());
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, conversionTask.getUUID().toString()));
 
@@ -102,7 +100,6 @@ public class TaskRegistryActor extends AbstractActor {
 
         actorRouter.tell(primeTask, getSelf());
         sourceMap.put(primeTask.getUUID(), Optional.empty());
-        System.out.println(primeTask.getDirectoryName());
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, primeTask.getUUID().toString()));
 
