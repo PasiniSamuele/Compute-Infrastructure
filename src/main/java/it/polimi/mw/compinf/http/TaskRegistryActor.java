@@ -79,8 +79,7 @@ public class TaskRegistryActor extends AbstractActor {
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, compressionTask.getUUID().toString()));
 
-        getSender().tell(new GenericMessage(
-                String.format("Task compression %s submitted successfully.", compressionTask.getUUID())), getSelf());
+        getSender().tell(new TaskCreationMessage("Compression task submitted successfully!", compressionTask.getUUID()), getSelf());
     }
 
     private void onCreateConversionMessage(CreateConversionMessage ccm) {
@@ -91,8 +90,7 @@ public class TaskRegistryActor extends AbstractActor {
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, conversionTask.getUUID().toString()));
 
-        getSender().tell(new GenericMessage(
-                String.format("Task conversion %s submitted successfully.", conversionTask.getUUID())), getSelf());
+        getSender().tell(new TaskCreationMessage("Conversion task submitted successfully!", conversionTask.getUUID()), getSelf());
     }
 
     private void onCreatePrimeMessage(CreatePrimeMessage cpm) {
@@ -103,8 +101,7 @@ public class TaskRegistryActor extends AbstractActor {
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, primeTask.getUUID().toString()));
 
-        getSender().tell(new GenericMessage(
-                String.format("Task prime %s submitted successfully.", primeTask.getUUID())), getSelf());
+        getSender().tell(new TaskCreationMessage("Prime task submitted successfully!", primeTask.getUUID()), getSelf());
     }
 
     private void onCreateSSE(CreateSSEMessage csse) {

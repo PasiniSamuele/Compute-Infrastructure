@@ -32,19 +32,19 @@ public class TaskRoutes extends AllDirectives {
         askTimeout = system.settings().config().getDuration("akka.http.routes.ask-timeout");
     }
 
-    private CompletionStage<TaskRegistryMessage.GenericMessage> createCompressionMessage(CompressionTask task) {
+    private CompletionStage<TaskRegistryMessage.TaskCreationMessage> createCompressionMessage(CompressionTask task) {
         return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateCompressionMessage(task), askTimeout)
-                .thenApply(TaskRegistryMessage.GenericMessage.class::cast);
+                .thenApply(TaskRegistryMessage.TaskCreationMessage.class::cast);
     }
 
-    private CompletionStage<TaskRegistryMessage.GenericMessage> createConversionMessage(ConversionTask task) {
+    private CompletionStage<TaskRegistryMessage.TaskCreationMessage> createConversionMessage(ConversionTask task) {
         return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateConversionMessage(task), askTimeout)
-                .thenApply(TaskRegistryMessage.GenericMessage.class::cast);
+                .thenApply(TaskRegistryMessage.TaskCreationMessage.class::cast);
     }
 
-    private CompletionStage<TaskRegistryMessage.GenericMessage> createPrimeMessage(PrimeTask task) {
+    private CompletionStage<TaskRegistryMessage.TaskCreationMessage> createPrimeMessage(PrimeTask task) {
         return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreatePrimeMessage(task), askTimeout)
-                .thenApply(TaskRegistryMessage.GenericMessage.class::cast);
+                .thenApply(TaskRegistryMessage.TaskCreationMessage.class::cast);
     }
 
     private CompletionStage<TaskRegistryMessage.GetSSEMessage> getSSESource(UUID uuid) {

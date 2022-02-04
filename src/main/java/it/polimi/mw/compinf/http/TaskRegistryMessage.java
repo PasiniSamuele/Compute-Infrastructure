@@ -12,15 +12,21 @@ import it.polimi.mw.compinf.tasks.ConversionTask;
 import java.util.UUID;
 
 public interface TaskRegistryMessage {
-    class GenericMessage implements CborSerializable {
+    class TaskCreationMessage implements CborSerializable {
         private final String message;
+        private final UUID uuid;
 
-        public GenericMessage(String message) {
+        public TaskCreationMessage(String message, UUID uuid) {
             this.message = message;
+            this.uuid = uuid;
         }
 
         public String getMessage() {
             return message;
+        }
+
+        public UUID getUUID() {
+            return uuid;
         }
     }
 
