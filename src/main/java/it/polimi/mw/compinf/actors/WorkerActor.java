@@ -18,9 +18,9 @@ public class WorkerActor extends AbstractLoggingActor {
     private final ActorSelection storeKeeper;
     private final KafkaProducer<String, String> kafkaProducer;
 
-    private final static String compressionOutput = "Compression task executed!%nTask UUID: %s%nCompression Ratio: %s";
+    private final static String compressionOutput = "Compression task executed!%nTask UUID: %s%nCompression Ratio: %f";
     private final static String conversionOutput = "Conversion task executed!%nTask UUID: %s%nTarget Format: %s";
-    private final static String primeOutput = "Conversion task executed!%nTask UUID: %s%nTarget Format: %s";
+    private final static String primeOutput = "Prime task executed!%nTask UUID: %s%nUpper Bound: %d";
 
     public WorkerActor() {
         this.storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/storeKeeper");
