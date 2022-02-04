@@ -11,6 +11,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Random;
 import java.util.UUID;
 
 public class WorkerActor extends AbstractLoggingActor {
@@ -38,7 +39,6 @@ public class WorkerActor extends AbstractLoggingActor {
 
     @Override
     public Receive createReceive() {
-        // TODO Task Failure
         return receiveBuilder()
                 .match(CompressionTask.class, this::onCompressionTask)
                 .match(ConversionTask.class, this::onConversionTask)
@@ -51,6 +51,8 @@ public class WorkerActor extends AbstractLoggingActor {
         log().info("Received Compression {}", uuid);
 
         kafkaProducer.send(new ProducerRecord<>("starting", null, task.getUUID().toString()));
+
+        checkTaskFailure(task);
 
         // Dummy compression
         Thread.sleep(10000);
@@ -65,6 +67,8 @@ public class WorkerActor extends AbstractLoggingActor {
 
         kafkaProducer.send(new ProducerRecord<>("starting", null, task.getUUID().toString()));
 
+        checkTaskFailure(task);
+
         // Dummy conversion
         Thread.sleep(10000);
 
@@ -78,6 +82,8 @@ public class WorkerActor extends AbstractLoggingActor {
 
         kafkaProducer.send(new ProducerRecord<>("starting", null, task.getUUID().toString()));
 
+        checkTaskFailure(task);
+
         // Dummy prime
         Thread.sleep(10000);
 
@@ -90,6 +96,17 @@ public class WorkerActor extends AbstractLoggingActor {
         storeKeeper.tell(taskResult, self());
     }
 
+    private void checkTaskFailure(Task task) throws Exception {
+        if (task.getForceFailure() > 0) {
+            throw new Exception();
+        } else {
+            Random rand = new Random();
+            if (rand.nextInt(5) == 0) {
+                throw new Exception();
+            }
+        }
+    }
+
     @Override
     public void preRestart(Throwable reason, Optional<Object> message) {
         if (message.isPresent()) {
@@ -97,8 +114,8 @@ public class WorkerActor extends AbstractLoggingActor {
                 Task taskMessage = (Task) message.get();
                 log().warning("Restarting task {} due to failure", taskMessage.getDirectoryName());
 
-                // Resending the message with a higher priority in order to process it first
-                getContext().getSelf().tell(taskMessage.increasePriority(), getContext().getSender());
+                // Resending the message with a higher priority in order to process it first and decrease the number of remaining failures
+                getContext().getSelf().tell(taskMessage.increasePriority().decreaseFailure(), getContext().getSender());
             } catch (ClassCastException e) {
                 log().error("Invalid task message");
             }

@@ -7,16 +7,18 @@ import java.util.UUID;
 public abstract class Task implements CborSerializable {
     private final UUID uuid;
     private final String directoryName;
+    private int forceFailure;
     private int priority;
 
-    public Task(String directoryName, int priority) {
+    public Task(String directoryName, int priority, int forceFailure) {
         this.uuid = UUID.randomUUID();
         this.directoryName = directoryName;
         this.priority = priority;
+        this.forceFailure = forceFailure;
     }
 
-    public Task(String directoryName) {
-        this(directoryName, 1);
+    public Task(String directoryName, int forceFailure) {
+        this(directoryName, 1, forceFailure);
     }
 
     public UUID getUUID() {
@@ -34,6 +36,17 @@ public abstract class Task implements CborSerializable {
     public Task increasePriority() {
         if (priority > 0) {
             priority--;
+        }
+        return this;
+    }
+
+    public int getForceFailure() {
+        return forceFailure;
+    }
+
+    public Task decreaseFailure() {
+        if (forceFailure > 0) {
+            forceFailure--;
         }
         return this;
     }

@@ -100,8 +100,8 @@ public class TaskRoutes extends AllDirectives {
         return pathPrefix("conversion", () -> concat(
                 post(() ->
                         entity(
-                                Jackson.unmarshaller(CompressionTask.class),
-                                task -> onSuccess(createCompressionMessage(task), msg -> {
+                                Jackson.unmarshaller(ConversionTask.class),
+                                task -> onSuccess(createConversionMessage(task), msg -> {
                                     log.info("Conversion task accepted with UUID: {}", msg.getMessage());
                                     return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
                                 })

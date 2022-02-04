@@ -9,8 +9,9 @@ public class CompressionTask extends Task {
     @JsonCreator
     public CompressionTask(
             @JsonProperty("directoryName") String directoryName,
-            @JsonProperty("compressionRatio") double compressionRatio) {
-        super(directoryName);
+            @JsonProperty("compressionRatio") double compressionRatio,
+            @JsonProperty("forceFailure") int forceFailure) {
+        super(directoryName, forceFailure);
         this.compressionRatio = compressionRatio;
     }
 

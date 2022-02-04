@@ -9,8 +9,9 @@ public class PrimeTask extends Task {
     @JsonCreator
     public PrimeTask(
             @JsonProperty("directoryName") String directoryName,
-            @JsonProperty("upperBound") int upperBound) {
-        super(directoryName);
+            @JsonProperty("upperBound") int upperBound,
+            @JsonProperty("forceFailure") int forceFailure) {
+        super(directoryName, forceFailure);
         this.upperBound = upperBound;
     }
 

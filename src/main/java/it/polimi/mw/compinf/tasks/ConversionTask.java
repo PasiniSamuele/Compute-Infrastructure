@@ -9,8 +9,9 @@ public class ConversionTask extends Task {
     @JsonCreator
     public ConversionTask(
             @JsonProperty("directoryName") String directoryName,
-            @JsonProperty("targetFormat") String targetFormat) {
-        super(directoryName);
+            @JsonProperty("targetFormat") String targetFormat,
+            @JsonProperty("forceFailure") int forceFailure) {
+        super(directoryName, forceFailure);
         this.targetFormat = targetFormat;
     }
 
