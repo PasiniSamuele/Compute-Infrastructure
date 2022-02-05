@@ -1,8 +1,5 @@
 package it.polimi.mw.compinf.logging;
 
-import java.util.List;
-import java.util.Map;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.Dataset;
@@ -15,45 +12,46 @@ import org.apache.spark.streaming.kafka010.ConsumerStrategies;
 import org.apache.spark.streaming.kafka010.KafkaUtils;
 import org.apache.spark.streaming.kafka010.LocationStrategies;
 
+import java.util.List;
+import java.util.Map;
+
+
 public class SparkUtils {
 
-	public final static JavaStreamingContext getStreamingContext() {
+	public static JavaStreamingContext getStreamingContext() {
 		// spark init
-		final String master = "local[4]";
+		final String master = "spark://127.0.0.1:7077";
 		final SparkConf conf = new SparkConf().setMaster(master).setAppName("LogService");
 		return new JavaStreamingContext(conf, Durations.seconds(1));
 	}
 	
 	
-	public final static JavaInputDStream<ConsumerRecord<String, String>> getInputStream(List<String> topics, JavaStreamingContext sc,  Map<String, Object> props){
-		JavaInputDStream<ConsumerRecord<String, String>> stream = 
-      		  KafkaUtils.createDirectStream(
-      				  sc, 
-      		    LocationStrategies.PreferConsistent(), 
-      		    ConsumerStrategies.<String, String> Subscribe(topics, props));
-		return stream;
+	public static JavaInputDStream<ConsumerRecord<String, String>> getInputStream(List<String> topics, JavaStreamingContext sc,  Map<String, Object> props){
+		return KafkaUtils.createDirectStream(
+				sc,
+				LocationStrategies.PreferConsistent(),
+				ConsumerStrategies.<String, String> Subscribe(topics, props));
 	}
 	
-	public final static Dataset<Row> getStructuredStream(SparkSession spark, String topic, String kafkaServer){
-		Dataset<Row> df = spark
+	public static Dataset<Row> getStructuredStream(SparkSession spark, String topic, String kafkaServer, String watermark){
+		return spark
 				  .readStream()
 				  .format("kafka")
 				  .option("kafka.bootstrap.servers", kafkaServer)
 				  .option("subscribe", topic)
-				  .load();
-				 // .selectExpr("CAST(value AS STRING)", "CAST(timestamp AS TIMESTAMP)");
-		return df;
+				  .load()
+				  .selectExpr("CAST(value AS STRING)","CAST(timestamp AS TIMESTAMP)")
+				  .withWatermark("timestamp", watermark);
 	}
 	
-	public final static SparkSession getSession() {
+	public static SparkSession getSession() {
 		String master = "local[4]";
 
-        SparkSession spark = SparkSession
-                .builder()
-                .master(master)
-                .appName("LogService")
-                .getOrCreate()
-                .newSession();
-        return spark;
+		return SparkSession
+				.builder()
+				.master(master)
+				.appName("LogService")
+				.getOrCreate()
+				.newSession();
 	}
 }

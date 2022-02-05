@@ -1,16 +1,16 @@
 package it.polimi.mw.compinf.logging;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class CustomKafkaUtils {
 	
 	private static final String serverAddr = "127.0.0.1:9092";
 	
-	public static final Map<String, Object> getProperties(){
+	public static final Map<String, Object> getProperties() {
 		
 		String groupId =  "logger";
         Map<String, Object> props = new HashMap<String, Object>();
