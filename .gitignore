@@ -12,3 +12,4 @@ target/
 .bloop
 .attach_pid*
 
+.DS_Store
