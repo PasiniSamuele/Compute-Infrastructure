@@ -1,4 +1,4 @@
-package it.polimi.mw.compinf.logging;
+package it.polimi.mw.compinf.logging.spark.sink.pool;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -6,6 +6,10 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+/**
+ * Class to handle Database operations in spark using Hikari Conenction Pool
+ *
+ */
 public class DataSource {
 	private static HikariConfig config = new HikariConfig();
     private static HikariDataSource ds;
@@ -23,6 +27,11 @@ public class DataSource {
 
     private DataSource() {}
 
+    /**
+     * Method to get a connection from the pool
+     * @return An open connection
+     * @throws SQLException Error handling the connection
+     */
     public static Connection getConnection() throws SQLException {
         return ds.getConnection();
     }

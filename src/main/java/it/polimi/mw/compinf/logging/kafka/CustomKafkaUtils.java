@@ -1,4 +1,4 @@
-package it.polimi.mw.compinf.logging;
+package it.polimi.mw.compinf.logging.kafka;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -6,12 +6,19 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Utils class to handle Kafka configuration
+ *
+ */
 public class CustomKafkaUtils {
 	
 	private static final String serverAddr = "127.0.0.1:9092";
 	
+	/**
+	 * Method to configure Kafka properties
+	 * @return A map of properties
+	 */
 	public static final Map<String, Object> getProperties() {
-		
 		String groupId =  "logger";
         Map<String, Object> props = new HashMap<String, Object>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, CustomKafkaUtils.serverAddr);
@@ -24,6 +31,10 @@ public class CustomKafkaUtils {
         return props;
 	}
 	
+	/**
+	 * Getter of the address
+	 * @return Kafka Server Address
+	 */
 	public static final String getServerAddr() {
 		return CustomKafkaUtils.serverAddr;
 	}

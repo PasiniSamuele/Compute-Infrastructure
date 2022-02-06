@@ -1,184 +1,56 @@
 package it.polimi.mw.compinf.logging;
 
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.streaming.StreamingQuery;
-import org.apache.spark.sql.streaming.StreamingQueryException;
-import org.apache.spark.sql.streaming.Trigger;
-
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import static org.apache.spark.sql.functions.*;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.streaming.StreamingQuery;
+
+import it.polimi.mw.compinf.logging.spark.SparkQueries;
+import it.polimi.mw.compinf.logging.spark.SparkStreamingInterface;
+import it.polimi.mw.compinf.logging.spark.SparkUtils;
 
 
 
 public class LogService {
+	
+	private static final String WATERMARK = "1 hour";
+	
+	private static final List<SparkQueries> SPARK_QUERIES= Arrays.asList(		
+					SparkQueries.COMPLETED_PER_MINUTE,
+					SparkQueries.COMPLETED_PER_HOUR,
+					SparkQueries.COMPLETED_PER_DAY,
+					SparkQueries.COMPLETED_PER_WEEK,
+					SparkQueries.COMPLETED_PER_MONTH,
+					SparkQueries.AVERAGE_STARTING,
+					SparkQueries.PENDING_TASKS	        
+			);
 
 	public static void main(String[] args) throws TimeoutException {
 		
+		//Disable Log messages
 		LogUtils.setLogLevel();
 		
-		//spark init
+		//Spark initialization
 		SparkSession sparkSession = SparkUtils.getSession();
+		SparkStreamingInterface sparkStreaming = SparkUtils.getSparkStreaming();
+		
+		//Initialize the Streams
+		SparkUtils.setStreams(sparkSession, sparkStreaming, WATERMARK);
 
-        //kafka inint
-		String kafkaServer = CustomKafkaUtils.getServerAddr();
-        
+		//Create the queries
+		sparkStreaming.buildQueries(SPARK_QUERIES);
 		
-		//get the log stream
-		Dataset<Row> completed = SparkUtils.getStructuredStream(sparkSession, "completed", kafkaServer, "1 hour");
-		
-		Dataset<Row> pending = SparkUtils.getStructuredStream(sparkSession, "pending", kafkaServer, "1 hour");
-		
-		Dataset<Row> starting = SparkUtils.getStructuredStream(sparkSession, "starting", kafkaServer, "1 hour");
-
-		// Query number 2
-		Dataset<Row> actualPending = pending
-				.union(starting)
-				.groupBy("value")
-				.count()
-				.filter(expr("count<2"));
-
-		StreamingQuery pendingTasks = actualPending
-				.writeStream()
-				.outputMode("complete")
-				.trigger(Trigger.ProcessingTime("5 seconds"))
-				.foreachBatch(DatabaseUtils::pendingTasks)
-				.queryName("Pending Task")
-				.start();
-
-		//Queries number 1
-		StreamingQuery completedPerHour = completed
-				.withColumn("hour", 
-						hour(col("timestamp")))
-				.withColumn("day",
-					    to_date(col("timestamp"),"yyyy-MM-dd"))
-				.groupBy(col("day"), col("hour"))
-				.count()
-				.writeStream()
-                .outputMode("update")
-                .trigger(Trigger.ProcessingTime("1 minute"))
-                .foreachBatch(DatabaseUtils::completedPerHour)
-                .queryName("Completed tasks per hour")
-                .start();
-		
-		StreamingQuery completedPerDay = completed
-				.withColumn("day",
-					    to_date(col("timestamp"),"yyyy-MM-dd"))
-				.groupBy(col("day"))
-				.count()
-				.writeStream()
-                .outputMode("update")
-                .trigger(Trigger.ProcessingTime("1 minute"))
-                .foreachBatch(DatabaseUtils::completedPerDay)
-                .queryName("Completed tasks per day")
-                .start();
-		
-		StreamingQuery completedPerWeek = completed
-				.withColumn("year",
-					    year(col("timestamp")))
-				.withColumn("week", 
-						weekofyear(col("timestamp")))
-				.groupBy(col("year"), col("week"))
-				.count()
-				.writeStream()
-                .outputMode("update")
-                .trigger(Trigger.ProcessingTime("1 minute"))
-                .foreachBatch(DatabaseUtils::completedPerWeek)
-                .queryName("Completed tasks per week")
-                .start();
+		//Run the queries
+		List<StreamingQuery> queries = sparkStreaming.runQueries();
 		
 
-		StreamingQuery completedPerMonth = completed
-				.withColumn("year",
-					    year(col("timestamp")))
-				.withColumn("month", 
-						month(col("timestamp")))
-				.groupBy(col("year"), col("month"))
-				.count()
-				.writeStream()
-                .outputMode("update")
-                .trigger(Trigger.ProcessingTime("1 minute"))
-                .foreachBatch(DatabaseUtils::completedPerMonth)
-                .queryName("Completed tasks per month")
-                .start();
-
-		//Personal query to see faster the updates
-		StreamingQuery completedPerMinute = completed
-				.withColumn("minute",
-					    minute(col("timestamp")))
-				.withColumn("hour",
-					   	hour(col("timestamp")))
-				.withColumn("day",
-					    to_date(col("timestamp"),"yyyy-MM-dd"))
-				.groupBy(col("minute"), col("hour"), col("day"))
-				.count()
-				.writeStream()
-                .outputMode("update")
-                .trigger(Trigger.ProcessingTime("30 seconds"))
-                .foreachBatch(DatabaseUtils::completedPerMinute)
-                .queryName("Completed tasks per minute")
-                .start();
-
-
-		/*SparkContext sparkContext = sparkSession.sparkContext();
-
-		Runnable runPendQuery = () -> {
-			sparkContext.setLocalProperty("spark.scheduler.pool", "high");
-
-			// Query number 2
-			Dataset<Row> actualPending = pending
-					.union(starting)
-					.groupBy("value")
-					.count()
-					.filter(expr("count<2"));
-
-			try {
-				StreamingQuery pendingTasks = actualPending
-						.writeStream()
-						.outputMode("complete")
-						.trigger(Trigger.ProcessingTime("5 seconds"))
-						.foreachBatch(DatabaseUtils::pendingTasks)
-						.queryName("Pending Task")
-						.start();
-			} catch (TimeoutException e) {
-				e.printStackTrace();
-			}
-		};
-
-		Thread thPendQuery = new Thread(runPendQuery);
-		thPendQuery.start();*/
-
-		
-		//Query number 3
-		StreamingQuery averageStart = starting
-				.agg(expr("count(value)/approx_count_distinct(value)"))
-				.withColumnRenamed("(count(value) / approx_count_distinct(value))", "average")
-				.na().drop("any")
-				.writeStream()
-				.outputMode("complete")
-				.trigger(Trigger.ProcessingTime("1 minute"))
-                .foreachBatch(DatabaseUtils::averageStartingTask)
-                .queryName("Average starting Task")
-                .start();
-		
-		try {
-			completedPerMinute.awaitTermination();
-			completedPerMonth.awaitTermination();
-			completedPerDay.awaitTermination();
-			completedPerWeek.awaitTermination();
-			completedPerHour.awaitTermination();
-			pendingTasks.awaitTermination();
-			//thPendQuery.join();
-			averageStart.awaitTermination();
-			
-        } catch (final StreamingQueryException e) {
-            e.printStackTrace();
-        }
-
-
+		//Termination
+		sparkStreaming.waitQueriesTermination(queries);
 		sparkSession.close();
 	}
+	
+	
 
 }
