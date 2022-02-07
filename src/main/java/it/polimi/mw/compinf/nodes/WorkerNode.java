@@ -14,13 +14,13 @@ public class WorkerNode extends Node {
     private final static int SUPERVISOR_RETRIES = 10;
     private final static int SUPERVISOR_PERIOD = 1;
 
-    public WorkerNode(String port) {
-        super(port, "worker");
+    public WorkerNode(String port, String seed, String kafka) {
+        super("worker", port, seed, kafka);
     }
 
     @Override
-    void startNode(String port, String role) {
-        ActorSystem actorSystem = ActorSystem.create("cluster", setupClusterNodeConfig(port, role));
+    void startNode(String role, String port, String seed, String kafka) {
+        ActorSystem actorSystem = ActorSystem.create("cluster", setupClusterNodeConfig(role, port, seed));
 
         // Creating supervision strategy for the local router
         Duration duration = Duration.create(SUPERVISOR_PERIOD, TimeUnit.MINUTES);
@@ -32,7 +32,7 @@ public class WorkerNode extends Node {
                 FromConfig
                         .getInstance()
                         .withSupervisorStrategy(strategy)
-                        .props(WorkerActor.props()),
+                        .props(WorkerActor.props(kafka)),
                 "workerRouter");
 
         actorSystem.log().info("Akka node {}", actorSystem.provider().getDefaultAddress());

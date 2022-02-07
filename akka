@@ -1,0 +1,93 @@
+#!/bin/bash
+
+helpCluster() {
+  echo "Use the cluster command to start, stop, and view the status of Akka cluster nodes."
+  echo
+  echo "./akka cluster [start | stop | status]"
+  echo "./akka cluster start                                          # Starts one Akka cluster."
+  echo "./akka cluster stop                                           # Stops all currently cluster nodes."
+  echo "./akka cluster status                                         # Shows an Akka Management view of the cluster status/state."
+}
+
+helpNode() {
+  echo "Use the node command to start, stop a specific cluster node."
+  echo
+  echo "./akka node start [role] [port] [seed node] {[kafka server]}  # Start the specified cluster node."
+  echo "./akka node stop [port]                                       # Stop the specified cluster node."
+}
+
+helpAll() {
+  echo "This CLI is used to start, stop and monitor nodes in an Akka cluster."
+  echo
+  echo "These commands manage the Akka cluster as defined in this project. A cluster"
+  echo "of nodes is started using the JAR file build from this project's Maven POM file."
+  echo
+  helpCluster
+  echo
+  helpNode
+}
+
+clusterCommand() {
+  command=$1
+  argument=$2
+
+  case $command in
+    "start")
+      $scriptPath/cluster-start
+      ;;
+    "stop")
+      $scriptPath/cluster-stop
+      ;;
+    "status")
+      $scriptPath/cluster-status
+      ;;
+    *)
+      helpCluster
+      ;;
+  esac
+}
+
+nodeCommand() {
+  command=$1
+  argument=$2
+
+  case $command in
+    "start")
+      $scriptPath/node-start $argument
+      ;;
+    "stop")
+      $scriptPath/node-stop $argument
+      ;;
+    *)
+      helpNode
+      ;;
+  esac
+}
+
+command() {
+  command=$1
+  subCommand=$2
+  argument=$3
+
+  case $command in
+    "cluster")
+      clusterCommand $subCommand $argument
+      ;;
+    "node")
+      nodeCommand $subCommand $argument
+      ;;
+    *)
+      echo "Invalid command '$command'"
+      echo
+      helpAll
+      ;;
+  esac
+}
+
+scriptPath=$(dirname $0)
+
+if [ $# -eq 0 ] ; then
+  helpAll
+else
+  command $1 $2 $3
+fi

@@ -20,19 +20,19 @@ public class StoreKeeperActor extends AbstractLoggingActor {
     private final ActorSelection registryActor;
     private final KafkaProducer<String, String> kafkaProducer;
 
-    public StoreKeeperActor() {
+    public StoreKeeperActor(String kafka) {
         this.registryActor = getContext().actorSelection("akka://cluster@127.0.0.1:7777/user/taskRegistryActor");
 
         final Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
         this.kafkaProducer = new KafkaProducer<>(props);
     }
 
-    public static Props props() {
-        return Props.create(StoreKeeperActor.class);
+    public static Props props(String kafka) {
+        return Props.create(StoreKeeperActor.class, () -> new StoreKeeperActor(kafka));
     }
 
     @Override

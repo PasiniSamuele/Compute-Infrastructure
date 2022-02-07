@@ -3,6 +3,7 @@ package it.polimi.mw.compinf.nodes;
 import akka.actor.*;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
+import akka.management.javadsl.AkkaManagement;
 import it.polimi.mw.compinf.http.TaskRegistryActor;
 import it.polimi.mw.compinf.http.TaskRoutes;
 
@@ -10,27 +11,29 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CompletionStage;
 
 public class HttpNode extends Node {
-    public HttpNode(String port) {
-        super(port, "http");
+    public HttpNode(String port, String seed) {
+        super("http", port, seed, "");
     }
 
     @Override
-    void startNode(String port, String role) {
+    void startNode(String role, String port, String seed, String kafka) {
         // Boot up server using the route as defined below
-        ActorSystem system = ActorSystem.create("cluster", setupClusterNodeConfig(port, role));
+        ActorSystem actorSystem = ActorSystem.create("cluster", setupClusterNodeConfig(role, port, seed));
 
-        ActorRef taskRegistryActor = system.actorOf(TaskRegistryActor.props(), "taskRegistryActor");
+        AkkaManagement.get(actorSystem).start();
 
-        TaskRoutes taskRoutes = new TaskRoutes(system, taskRegistryActor);
-        CompletionStage<ServerBinding> futureBinding = Http.get(system).newServerAt("localhost", 40000).bind(taskRoutes.taskRoutes());
+        ActorRef taskRegistryActor = actorSystem.actorOf(TaskRegistryActor.props(), "taskRegistryActor");
+
+        TaskRoutes taskRoutes = new TaskRoutes(actorSystem, taskRegistryActor);
+        CompletionStage<ServerBinding> futureBinding = Http.get(actorSystem).newServerAt("localhost", 40000).bind(taskRoutes.taskRoutes());
 
         futureBinding.whenComplete((binding, exception) -> {
             if (binding != null) {
                 InetSocketAddress address = binding.localAddress();
-                system.log().info("Server online at http://{}:{}/", address.getHostString(), address.getPort());
+                actorSystem.log().info("Server online at http://{}:{}/", address.getHostString(), address.getPort());
             } else {
-                system.log().error("Failed to bind HTTP endpoint, terminating system", exception);
-                system.terminate();
+                actorSystem.log().error("Failed to bind HTTP endpoint, terminating system", exception);
+                actorSystem.terminate();
             }
         });
     }

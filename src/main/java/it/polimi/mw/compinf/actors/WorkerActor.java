@@ -22,19 +22,19 @@ public class WorkerActor extends AbstractLoggingActor {
     private final static String conversionOutput = "Conversion task executed!%nTask UUID: %s%nTarget Format: %s";
     private final static String primeOutput = "Prime task executed!%nTask UUID: %s%nUpper Bound: %d";
 
-    public WorkerActor() {
+    public WorkerActor(String kafka) {
         this.storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/storeKeeper");
 
         final Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
         this.kafkaProducer = new KafkaProducer<>(props);
     }
 
-    public static Props props() {
-        return Props.create(WorkerActor.class);
+    public static Props props(String kafka) {
+        return Props.create(WorkerActor.class, new WorkerActor(kafka));
     }
 
     @Override

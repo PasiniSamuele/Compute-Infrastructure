@@ -4,13 +4,13 @@ import akka.actor.ActorSystem;
 import it.polimi.mw.compinf.actors.StoreKeeperActor;
 
 public class StoreKeeperNode extends Node {
-    public StoreKeeperNode(String port) {
-        super(port, "storeKeeper");
+    public StoreKeeperNode(String port, String seed, String kafka) {
+        super("storeKeeper", port, seed, kafka);
     }
 
     @Override
-    void startNode(String port, String role) {
-        ActorSystem actorSystem = ActorSystem.create("cluster", setupClusterNodeConfig(port, role));
-        actorSystem.actorOf(StoreKeeperActor.props(), "storeKeeper");
+    void startNode(String role, String port, String seed, String kafka) {
+        ActorSystem actorSystem = ActorSystem.create("cluster", setupClusterNodeConfig(role, port, seed));
+        actorSystem.actorOf(StoreKeeperActor.props(kafka), "storeKeeper");
     }
 }
