@@ -20,6 +20,7 @@ import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
 import org.apache.spark.sql.streaming.Trigger;
 
+import it.polimi.mw.compinf.logging.LogUtils;
 import it.polimi.mw.compinf.logging.spark.sink.SparkSinkInterface;
 
 /**
@@ -36,6 +37,7 @@ public class SparkStreamingWithSink implements SparkStreamingInterface {
 
 	public SparkStreamingWithSink(SparkSinkInterface sink) {
 		this.sink = sink;
+		this.queries = new ArrayList<DataStreamWriter<Row>>();
 	}
 
 	
@@ -76,6 +78,8 @@ public class SparkStreamingWithSink implements SparkStreamingInterface {
 	 */
 	@Override
 	public List<StreamingQuery> runQueries() {
+		//Disable Log messages
+		LogUtils.setLogLevel();
 		List<StreamingQuery> streamingQueries = new ArrayList<StreamingQuery>();
 		queries.forEach((query)->{
 			try {

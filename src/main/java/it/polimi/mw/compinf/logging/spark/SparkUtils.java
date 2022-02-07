@@ -25,7 +25,7 @@ public class SparkUtils {
 	public static SparkSession getSession() {
 		return SparkSession
 				.builder()
-				.master(MASTER)
+				.master("local[4]")
 				.appName(APP_NAME)
 				.getOrCreate()
 				.newSession();
