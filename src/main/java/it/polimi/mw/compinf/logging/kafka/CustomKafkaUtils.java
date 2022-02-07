@@ -8,18 +8,18 @@ import java.util.Map;
 
 /**
  * Utils class to handle Kafka configuration
- *
  */
 public class CustomKafkaUtils {
-	
-	private static final String serverAddr = "127.0.0.1:9092";
-	
-	/**
-	 * Method to configure Kafka properties
-	 * @return A map of properties
-	 */
-	public static final Map<String, Object> getProperties() {
-		String groupId =  "logger";
+
+    private static final String serverAddr = "127.0.0.1:9092";
+
+    /**
+     * Method to configure Kafka properties
+     *
+     * @return A map of properties
+     */
+    public static final Map<String, Object> getProperties() {
+        String groupId = "logger";
         Map<String, Object> props = new HashMap<String, Object>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, CustomKafkaUtils.serverAddr);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
@@ -29,13 +29,14 @@ public class CustomKafkaUtils {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         return props;
-	}
-	
-	/**
-	 * Getter of the address
-	 * @return Kafka Server Address
-	 */
-	public static final String getServerAddr() {
-		return CustomKafkaUtils.serverAddr;
-	}
+    }
+
+    /**
+     * Getter of the address
+     *
+     * @return Kafka Server Address
+     */
+    public static final String getServerAddr() {
+        return CustomKafkaUtils.serverAddr;
+    }
 }

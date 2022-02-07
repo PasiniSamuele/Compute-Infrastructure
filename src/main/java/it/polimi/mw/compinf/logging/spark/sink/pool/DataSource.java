@@ -8,10 +8,9 @@ import java.sql.SQLException;
 
 /**
  * Class to handle Database operations in spark using Hikari Conenction Pool
- *
  */
 public class DataSource {
-	private static HikariConfig config = new HikariConfig();
+    private static HikariConfig config = new HikariConfig();
     private static HikariDataSource ds;
 
     static {
@@ -19,16 +18,18 @@ public class DataSource {
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");
         config.setUsername("dev");
         config.setPassword("dev");
-        config.addDataSourceProperty("cachePrepStmts" , "true");
-        config.addDataSourceProperty("prepStmtCacheSize" , "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit" , "2048");
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         ds = new HikariDataSource(config);
     }
 
-    private DataSource() {}
+    private DataSource() {
+    }
 
     /**
      * Method to get a connection from the pool
+     *
      * @return An open connection
      * @throws SQLException Error handling the connection
      */

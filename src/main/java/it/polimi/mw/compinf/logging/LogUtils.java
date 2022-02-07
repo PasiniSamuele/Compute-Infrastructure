@@ -6,7 +6,6 @@ import org.apache.log4j.Logger;
 
 /**
  * Class to handle logging
- *
  */
 public class LogUtils {
 

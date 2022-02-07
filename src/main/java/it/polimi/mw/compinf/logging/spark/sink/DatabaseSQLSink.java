@@ -1,388 +1,384 @@
 package it.polimi.mw.compinf.logging.spark.sink;
 
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.Year;
-import java.util.Iterator;
-import java.util.Optional;
-
+import it.polimi.mw.compinf.logging.spark.sink.exceptions.NewTupleException;
+import it.polimi.mw.compinf.logging.spark.sink.pool.DataSource;
 import org.apache.spark.api.java.function.ForeachPartitionFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 
-import it.polimi.mw.compinf.logging.spark.sink.exceptions.NewTupleException;
-import it.polimi.mw.compinf.logging.spark.sink.pool.DataSource;
+import java.sql.*;
+import java.time.Year;
+import java.util.Iterator;
+import java.util.Optional;
 
 /**
  * Utils class to handle Database Sink in Spark
- *
  */
 public class DatabaseSQLSink implements SparkSinkInterface {
-	
-	public DatabaseSQLSink() {
-	}
+
+    public DatabaseSQLSink() {
+    }
 
 
-	//Sequence of methods to handle Queries of the problem number 1: completed per month, week,...
-	//There is also the not requested "completed per minute" useful to test faster
-
-	
-	/**
-	 * Return the ID related to the searched ROW, if it is present
-	 * @param st Statement with the Selection query
-	 * @return The ID eventually selected
-	 * @throws SQLException
-	 */
-	private Optional<Integer> getId(PreparedStatement st) throws SQLException{
-		Optional<Integer> id = Optional.empty();
-		try (ResultSet result = st.executeQuery()) {
-			while (result.next()) {
-				id = Optional.of(result.getInt(1));
-			}
-		}
-		return id;
-	}
-	
-	/**
-	 * Execute the update query or throw an exception in the id is null, so there is no tuple to update
-	 * @param optionalId Id of the tuple tuple, if it exists
-	 * @param query Update query to execute
-	 * @param connection Connection to database
-	 * @param completed New value for the update
-	 * @throws SQLException Error in the query execution
-	 * @throws NewTupleException The id is null, no tuple to update
-	 */
-	private void updateCompletedTuple(Optional<Integer> optionalId, String query, Connection connection, Long completed) throws SQLException, NewTupleException {
-		Integer id = optionalId.orElseThrow(NewTupleException::new);
-		try (PreparedStatement st = connection.prepareStatement(query)) {
-			st.setLong(1, completed);
-			st.setInt(2, id);
-			st.executeUpdate();
-		}
-	}
-	
-	/**
-	 * Completed per Minute Query Database Sink
-	 */
-	@Override
-	public void completedPerMinute(Dataset<Row> batch, Long id) {
-		
-		batch.foreachPartition(new ForeachPartitionFunction<Row>() {
-			private static final long serialVersionUID = 1L;
-
-			public void call(Iterator<Row> t) throws Exception {
-				try (Connection connection = DataSource.getConnection()) {
-
-					while (t.hasNext()) {
-
-						//Extract every row in the batch
-						
-						Row row = t.next(); 
-
-						//Get the fields
-						Date day = row.getDate(row.fieldIndex("day"));
-						int hour = row.getInt(row.fieldIndex("hour"));
-						int minute = row.getInt(row.fieldIndex("minute"));
-						long completed = row.getLong(row.fieldIndex("count"));
-						
-
-						Optional<Integer> id;
-
-						//Get the id of the tuple to update (if present)
-						try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_MINUTE)) {
-							st.setDate(1, day);
-							st.setInt(2, hour);
-							st.setInt(3, minute);
-							id = getId(st);
-						}
-
-						// Try to update the tuple in the database
-						try {
-							updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_MINUTE,connection, completed);
-						}
-						//Handle the exception in case the tuple is not present and it is needed to create it
-						catch (NewTupleException e) {
-							try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_MINUTE)) {
-								st.setDate(1, day);
-								st.setInt(2, hour);
-								st.setInt(3, minute);
-								st.setLong(4, completed);
-								st.executeUpdate();
-							}
-						}
-						
-					}
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-				
-
-			}
-		});
-
-	}
-
-	/**
-	 * Completed per Month Query Database Sink
-	 */
-	@Override
-	public void completedPerMonth(Dataset<Row> batch, Long id) {
-		batch.foreachPartition(new ForeachPartitionFunction<Row>() {
-			private static final long serialVersionUID = 1L;
-
-			public void call(Iterator<Row> t) throws Exception {
-				try (Connection connection = DataSource.getConnection()) {
-
-					while (t.hasNext()) {
-
-						//Extract every row in the batch
-						Row row = t.next(); 
-
-						
-						//Get the fields
-						Year year = Year.of(row.getInt(row.fieldIndex("year")));
-						int month = row.getInt(row.fieldIndex("month"));
-						long completed = row.getLong(row.fieldIndex("count"));
+    //Sequence of methods to handle Queries of the problem number 1: completed per month, week,...
+    //There is also the not requested "completed per minute" useful to test faster
 
 
-						Optional<Integer> id;
+    /**
+     * Return the ID related to the searched ROW, if it is present
+     *
+     * @param st Statement with the Selection query
+     * @return The ID eventually selected
+     * @throws SQLException
+     */
+    private Optional<Integer> getId(PreparedStatement st) throws SQLException {
+        Optional<Integer> id = Optional.empty();
+        try (ResultSet result = st.executeQuery()) {
+            while (result.next()) {
+                id = Optional.of(result.getInt(1));
+            }
+        }
+        return id;
+    }
 
-						//Get the id of the tuple to update (if present)
-						try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_MONTH)) {
-							st.setInt(1, year.getValue());
-							st.setInt(2, month);
-							id=getId(st);
-						}
+    /**
+     * Execute the update query or throw an exception in the id is null, so there is no tuple to update
+     *
+     * @param optionalId Id of the tuple tuple, if it exists
+     * @param query      Update query to execute
+     * @param connection Connection to database
+     * @param completed  New value for the update
+     * @throws SQLException      Error in the query execution
+     * @throws NewTupleException The id is null, no tuple to update
+     */
+    private void updateCompletedTuple(Optional<Integer> optionalId, String query, Connection connection, Long completed) throws SQLException, NewTupleException {
+        Integer id = optionalId.orElseThrow(NewTupleException::new);
+        try (PreparedStatement st = connection.prepareStatement(query)) {
+            st.setLong(1, completed);
+            st.setInt(2, id);
+            st.executeUpdate();
+        }
+    }
 
-						// Try to update the tuple in the database
-						try {
-							updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_MONTH,connection, completed);
-						}
-						//Handle the exception in case the tuple is not present and it is needed to create it
-						catch (NewTupleException e) {
-							try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_MONTH)) {
-								st.setInt(1, year.getValue());
-								st.setInt(2, month);
-								st.setLong(3, completed);
-								st.executeUpdate();
-							}
-						}
-					}
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
+    /**
+     * Completed per Minute Query Database Sink
+     */
+    @Override
+    public void completedPerMinute(Dataset<Row> batch, Long id) {
 
-			}
-		});
+        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+            private static final long serialVersionUID = 1L;
 
-	}
+            public void call(Iterator<Row> t) throws Exception {
+                try (Connection connection = DataSource.getConnection()) {
 
-	/**
-	 * Completed per Week Query Database Sink
-	 */
-	@Override
-	public void completedPerWeek(Dataset<Row> batch, Long id) {
-		batch.foreachPartition(new ForeachPartitionFunction<Row>() {
-			private static final long serialVersionUID = 1L;
+                    while (t.hasNext()) {
 
-			public void call(Iterator<Row> t) throws Exception {
-				try (Connection connection = DataSource.getConnection()) {
+                        //Extract every row in the batch
 
-					while (t.hasNext()) {
+                        Row row = t.next();
 
-						//Extract every row in the batch
-						Row row = t.next(); 
+                        //Get the fields
+                        Date day = row.getDate(row.fieldIndex("day"));
+                        int hour = row.getInt(row.fieldIndex("hour"));
+                        int minute = row.getInt(row.fieldIndex("minute"));
+                        long completed = row.getLong(row.fieldIndex("count"));
 
-						//Get the fields
-						Year year = Year.of(row.getInt(row.fieldIndex("year")));
-						int week = row.getInt(row.fieldIndex("week"));
-						long completed = row.getLong(row.fieldIndex("count"));
 
-						Optional<Integer> id;
+                        Optional<Integer> id;
 
-						//Get the id of the tuple to update (if present)
-						try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_WEEK)) {
-							st.setInt(1, year.getValue());
-							st.setInt(2, week);
-							id=getId(st);
-						}
+                        //Get the id of the tuple to update (if present)
+                        try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_MINUTE)) {
+                            st.setDate(1, day);
+                            st.setInt(2, hour);
+                            st.setInt(3, minute);
+                            id = getId(st);
+                        }
 
-						// Try to update the tuple in the database
-						try {
-							updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_WEEK, connection, completed);
-						}
-						//Handle the exception in case the tuple is not present and it is needed to create it
-						catch (NewTupleException e) {
-							try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_WEEK)) {
-								st.setInt(1, year.getValue());
-								st.setInt(2, week);
-								st.setLong(3, completed);
-								st.executeUpdate();
-							}
-						}
-					}
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
+                        // Try to update the tuple in the database
+                        try {
+                            updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_MINUTE, connection, completed);
+                        }
+                        //Handle the exception in case the tuple is not present and it is needed to create it
+                        catch (NewTupleException e) {
+                            try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_MINUTE)) {
+                                st.setDate(1, day);
+                                st.setInt(2, hour);
+                                st.setInt(3, minute);
+                                st.setLong(4, completed);
+                                st.executeUpdate();
+                            }
+                        }
 
-			}
-		});
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
 
-	}
 
-	/**
-	 * Completed per Day Query Database Sink
-	 */
-	@Override
-	public void completedPerDay(Dataset<Row> batch, Long id) {
-		batch.foreachPartition(new ForeachPartitionFunction<Row>() {
-			private static final long serialVersionUID = 1L;
+            }
+        });
 
-			public void call(Iterator<Row> t) throws Exception {
-				try (Connection connection = DataSource.getConnection()) {
+    }
 
-					while (t.hasNext()) {
+    /**
+     * Completed per Month Query Database Sink
+     */
+    @Override
+    public void completedPerMonth(Dataset<Row> batch, Long id) {
+        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+            private static final long serialVersionUID = 1L;
 
-						//Extract every row in the batch
-						Row row = t.next(); 
+            public void call(Iterator<Row> t) throws Exception {
+                try (Connection connection = DataSource.getConnection()) {
 
-						//Get the fields
-						Date day = row.getDate(row.fieldIndex("day"));
-						long completed = row.getLong(row.fieldIndex("count"));
+                    while (t.hasNext()) {
 
-						Optional<Integer> id;
+                        //Extract every row in the batch
+                        Row row = t.next();
 
-						//Get the id of the tuple to update (if present)
-						try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_DAY)) {
-							st.setDate(1, day);
-							id = getId(st);
-						}
-						
-						// Try to update the tuple in the database
-						try {
-							updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_DAY, connection, completed);
-						}
-						//Handle the exception in case the tuple is not present and it is needed to create it
-						catch (NewTupleException e) {
-							try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_DAY)) {
-								st.setDate(1, day);
-								st.setLong(2, completed);
-								st.executeUpdate();
-							}
-						}
-					}
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
 
-			}
-		});
-	}
+                        //Get the fields
+                        Year year = Year.of(row.getInt(row.fieldIndex("year")));
+                        int month = row.getInt(row.fieldIndex("month"));
+                        long completed = row.getLong(row.fieldIndex("count"));
 
-	/**
-	 * Completed per Hour Query Database Sink
-	 */
-	@Override
-	public void completedPerHour(Dataset<Row> batch, Long id) {
-		batch.foreachPartition(new ForeachPartitionFunction<Row>() {
-			private static final long serialVersionUID = 1L;
 
-			public void call(Iterator<Row> t) throws Exception {
-				try (Connection connection = DataSource.getConnection()) {
+                        Optional<Integer> id;
 
-					while (t.hasNext()) {
+                        //Get the id of the tuple to update (if present)
+                        try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_MONTH)) {
+                            st.setInt(1, year.getValue());
+                            st.setInt(2, month);
+                            id = getId(st);
+                        }
 
-						//Extract every row in the batch
-						Row row = t.next(); 
+                        // Try to update the tuple in the database
+                        try {
+                            updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_MONTH, connection, completed);
+                        }
+                        //Handle the exception in case the tuple is not present and it is needed to create it
+                        catch (NewTupleException e) {
+                            try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_MONTH)) {
+                                st.setInt(1, year.getValue());
+                                st.setInt(2, month);
+                                st.setLong(3, completed);
+                                st.executeUpdate();
+                            }
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
 
-						//Get the fields
-						Date day = row.getDate(row.fieldIndex("day"));
-						int hour = row.getInt(row.fieldIndex("hour"));
-						long completed = row.getLong(row.fieldIndex("count"));
+            }
+        });
 
-						Optional<Integer> id;
+    }
 
-						//Get the id of the tuple to update (if present)
-						try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_HOUR)) {
-							st.setDate(1, day);
-							st.setInt(2, hour);
-							id=getId(st);
-						}
+    /**
+     * Completed per Week Query Database Sink
+     */
+    @Override
+    public void completedPerWeek(Dataset<Row> batch, Long id) {
+        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+            private static final long serialVersionUID = 1L;
 
-						// Try to update the tuple in the database
-						try {
-							updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_HOUR, connection, completed);
-						}
-						//Handle the exception in case the tuple is not present and it is needed to create it
-						catch (NewTupleException e) {
-							try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_HOUR)) {
-								st.setDate(1, day);
-								st.setInt(2, hour);
-								st.setLong(3, completed);
-								st.executeUpdate();
-							}
-						}
-					}
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
+            public void call(Iterator<Row> t) throws Exception {
+                try (Connection connection = DataSource.getConnection()) {
 
-			}
-		});
-	}
+                    while (t.hasNext()) {
 
-	/**
-	 * Pending Tasks Query Database Sink
-	 */
-	@Override
-	public void pendingTasks(Dataset<Row> batch, Long id) {
-		long pendingCount = batch.count();
-		try (Connection connection = DataSource.getConnection();
-				PreparedStatement st = connection.prepareStatement(Queries.INSERT_PENDING_COUNT)) {
-			st.setLong(1, pendingCount);
-			st.executeUpdate();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
+                        //Extract every row in the batch
+                        Row row = t.next();
 
-	/**
-	 * Average Starting Task Query Database Sink
-	 */
-	@Override
-	public void averageStartingTask(Dataset<Row> batch, Long id) {
+                        //Get the fields
+                        Year year = Year.of(row.getInt(row.fieldIndex("year")));
+                        int week = row.getInt(row.fieldIndex("week"));
+                        long completed = row.getLong(row.fieldIndex("count"));
 
-		batch.foreachPartition(new ForeachPartitionFunction<Row>() {
-			private static final long serialVersionUID = 1L;
+                        Optional<Integer> id;
 
-			public void call(Iterator<Row> t) throws Exception {
-				try (Connection connection = DataSource.getConnection()) {
+                        //Get the id of the tuple to update (if present)
+                        try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_WEEK)) {
+                            st.setInt(1, year.getValue());
+                            st.setInt(2, week);
+                            id = getId(st);
+                        }
 
-					while (t.hasNext()) {
+                        // Try to update the tuple in the database
+                        try {
+                            updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_WEEK, connection, completed);
+                        }
+                        //Handle the exception in case the tuple is not present and it is needed to create it
+                        catch (NewTupleException e) {
+                            try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_WEEK)) {
+                                st.setInt(1, year.getValue());
+                                st.setInt(2, week);
+                                st.setLong(3, completed);
+                                st.executeUpdate();
+                            }
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
 
-						//Extract every row in the batch (expected only one but it is a pattern)
-						Row row = t.next(); 
+            }
+        });
 
-						//Get the average
-						Double average = row.getDouble(row.fieldIndex("average"));
-						
-						//Insert into the database
-						try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_AVERAGE_STARTS)) {
-							st.setDouble(1, average);
-							st.executeUpdate();
-						}
+    }
 
-					}
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
+    /**
+     * Completed per Day Query Database Sink
+     */
+    @Override
+    public void completedPerDay(Dataset<Row> batch, Long id) {
+        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+            private static final long serialVersionUID = 1L;
 
-			}
-		});
+            public void call(Iterator<Row> t) throws Exception {
+                try (Connection connection = DataSource.getConnection()) {
 
-	}
+                    while (t.hasNext()) {
+
+                        //Extract every row in the batch
+                        Row row = t.next();
+
+                        //Get the fields
+                        Date day = row.getDate(row.fieldIndex("day"));
+                        long completed = row.getLong(row.fieldIndex("count"));
+
+                        Optional<Integer> id;
+
+                        //Get the id of the tuple to update (if present)
+                        try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_DAY)) {
+                            st.setDate(1, day);
+                            id = getId(st);
+                        }
+
+                        // Try to update the tuple in the database
+                        try {
+                            updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_DAY, connection, completed);
+                        }
+                        //Handle the exception in case the tuple is not present and it is needed to create it
+                        catch (NewTupleException e) {
+                            try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_DAY)) {
+                                st.setDate(1, day);
+                                st.setLong(2, completed);
+                                st.executeUpdate();
+                            }
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+    }
+
+    /**
+     * Completed per Hour Query Database Sink
+     */
+    @Override
+    public void completedPerHour(Dataset<Row> batch, Long id) {
+        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+            private static final long serialVersionUID = 1L;
+
+            public void call(Iterator<Row> t) throws Exception {
+                try (Connection connection = DataSource.getConnection()) {
+
+                    while (t.hasNext()) {
+
+                        //Extract every row in the batch
+                        Row row = t.next();
+
+                        //Get the fields
+                        Date day = row.getDate(row.fieldIndex("day"));
+                        int hour = row.getInt(row.fieldIndex("hour"));
+                        long completed = row.getLong(row.fieldIndex("count"));
+
+                        Optional<Integer> id;
+
+                        //Get the id of the tuple to update (if present)
+                        try (PreparedStatement st = connection.prepareStatement(Queries.SELECT_COMPLETED_BY_HOUR)) {
+                            st.setDate(1, day);
+                            st.setInt(2, hour);
+                            id = getId(st);
+                        }
+
+                        // Try to update the tuple in the database
+                        try {
+                            updateCompletedTuple(id, Queries.UPDATE_COMPLETED_BY_HOUR, connection, completed);
+                        }
+                        //Handle the exception in case the tuple is not present and it is needed to create it
+                        catch (NewTupleException e) {
+                            try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_COMPLETED_BY_HOUR)) {
+                                st.setDate(1, day);
+                                st.setInt(2, hour);
+                                st.setLong(3, completed);
+                                st.executeUpdate();
+                            }
+                        }
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+    }
+
+    /**
+     * Pending Tasks Query Database Sink
+     */
+    @Override
+    public void pendingTasks(Dataset<Row> batch, Long id) {
+        long pendingCount = batch.count();
+        try (Connection connection = DataSource.getConnection();
+             PreparedStatement st = connection.prepareStatement(Queries.INSERT_PENDING_COUNT)) {
+            st.setLong(1, pendingCount);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Average Starting Task Query Database Sink
+     */
+    @Override
+    public void averageStartingTask(Dataset<Row> batch, Long id) {
+
+        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+            private static final long serialVersionUID = 1L;
+
+            public void call(Iterator<Row> t) throws Exception {
+                try (Connection connection = DataSource.getConnection()) {
+
+                    while (t.hasNext()) {
+
+                        //Extract every row in the batch (expected only one but it is a pattern)
+                        Row row = t.next();
+
+                        //Get the average
+                        Double average = row.getDouble(row.fieldIndex("average"));
+
+                        //Insert into the database
+                        try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_AVERAGE_STARTS)) {
+                            st.setDouble(1, average);
+                            st.executeUpdate();
+                        }
+
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+
+    }
 
 }
