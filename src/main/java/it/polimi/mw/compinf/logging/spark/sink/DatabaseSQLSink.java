@@ -29,7 +29,7 @@ public class DatabaseSQLSink implements SparkSinkInterface {
      *
      * @param st Statement with the Selection query
      * @return The ID eventually selected
-     * @throws SQLException
+     * @throws SQLException on failure
      */
     private Optional<Integer> getId(PreparedStatement st) throws SQLException {
         Optional<Integer> id = Optional.empty();
@@ -66,10 +66,10 @@ public class DatabaseSQLSink implements SparkSinkInterface {
     @Override
     public void completedPerMinute(Dataset<Row> batch, Long id) {
 
-        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+        batch.foreachPartition(new ForeachPartitionFunction<>() {
             private static final long serialVersionUID = 1L;
 
-            public void call(Iterator<Row> t) throws Exception {
+            public void call(Iterator<Row> t) {
                 try (Connection connection = DataSource.getConnection()) {
 
                     while (t.hasNext()) {
@@ -126,10 +126,10 @@ public class DatabaseSQLSink implements SparkSinkInterface {
      */
     @Override
     public void completedPerMonth(Dataset<Row> batch, Long id) {
-        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+        batch.foreachPartition(new ForeachPartitionFunction<>() {
             private static final long serialVersionUID = 1L;
 
-            public void call(Iterator<Row> t) throws Exception {
+            public void call(Iterator<Row> t) {
                 try (Connection connection = DataSource.getConnection()) {
 
                     while (t.hasNext()) {
@@ -181,10 +181,10 @@ public class DatabaseSQLSink implements SparkSinkInterface {
      */
     @Override
     public void completedPerWeek(Dataset<Row> batch, Long id) {
-        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+        batch.foreachPartition(new ForeachPartitionFunction<>() {
             private static final long serialVersionUID = 1L;
 
-            public void call(Iterator<Row> t) throws Exception {
+            public void call(Iterator<Row> t) {
                 try (Connection connection = DataSource.getConnection()) {
 
                     while (t.hasNext()) {
@@ -234,10 +234,10 @@ public class DatabaseSQLSink implements SparkSinkInterface {
      */
     @Override
     public void completedPerDay(Dataset<Row> batch, Long id) {
-        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+        batch.foreachPartition(new ForeachPartitionFunction<>() {
             private static final long serialVersionUID = 1L;
 
-            public void call(Iterator<Row> t) throws Exception {
+            public void call(Iterator<Row> t) {
                 try (Connection connection = DataSource.getConnection()) {
 
                     while (t.hasNext()) {
@@ -283,10 +283,10 @@ public class DatabaseSQLSink implements SparkSinkInterface {
      */
     @Override
     public void completedPerHour(Dataset<Row> batch, Long id) {
-        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+        batch.foreachPartition(new ForeachPartitionFunction<>() {
             private static final long serialVersionUID = 1L;
 
-            public void call(Iterator<Row> t) throws Exception {
+            public void call(Iterator<Row> t) {
                 try (Connection connection = DataSource.getConnection()) {
 
                     while (t.hasNext()) {
@@ -351,10 +351,10 @@ public class DatabaseSQLSink implements SparkSinkInterface {
     @Override
     public void averageStartingTask(Dataset<Row> batch, Long id) {
 
-        batch.foreachPartition(new ForeachPartitionFunction<Row>() {
+        batch.foreachPartition(new ForeachPartitionFunction<>() {
             private static final long serialVersionUID = 1L;
 
-            public void call(Iterator<Row> t) throws Exception {
+            public void call(Iterator<Row> t) {
                 try (Connection connection = DataSource.getConnection()) {
 
                     while (t.hasNext()) {
@@ -363,7 +363,7 @@ public class DatabaseSQLSink implements SparkSinkInterface {
                         Row row = t.next();
 
                         //Get the average
-                        Double average = row.getDouble(row.fieldIndex("average"));
+                        double average = row.getDouble(row.fieldIndex("average"));
 
                         //Insert into the database
                         try (PreparedStatement st = connection.prepareStatement(Queries.INSERT_AVERAGE_STARTS)) {
