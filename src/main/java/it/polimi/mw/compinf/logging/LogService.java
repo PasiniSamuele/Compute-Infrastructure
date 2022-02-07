@@ -1,106 +1,56 @@
 package it.polimi.mw.compinf.logging;
 
-import static org.apache.spark.sql.functions.col;
-import static org.apache.spark.sql.functions.hour;
-import static org.apache.spark.sql.functions.to_date;
-
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.streaming.StreamingQuery;
-import org.apache.spark.sql.streaming.StreamingQueryException;
-import org.apache.spark.sql.streaming.Trigger;
+
+import it.polimi.mw.compinf.logging.spark.SparkQueries;
+import it.polimi.mw.compinf.logging.spark.SparkStreamingInterface;
+import it.polimi.mw.compinf.logging.spark.SparkUtils;
+
 
 
 public class LogService {
+	
+	private static final String WATERMARK = "1 hour";
+	
+	private static final List<SparkQueries> SPARK_QUERIES= Arrays.asList(		
+					SparkQueries.COMPLETED_PER_MINUTE,
+					SparkQueries.COMPLETED_PER_HOUR,
+					SparkQueries.COMPLETED_PER_DAY,
+					SparkQueries.COMPLETED_PER_WEEK,
+					SparkQueries.COMPLETED_PER_MONTH,
+					SparkQueries.AVERAGE_STARTING,
+					SparkQueries.PENDING_TASKS	        
+			);
 
 	public static void main(String[] args) throws TimeoutException {
 		
+		//Disable Log messages
 		LogUtils.setLogLevel();
 		
-		//spark init
-		SparkSession spark = SparkUtils.getSession();  
-        
-        //kafka inint
-		String kafkaServer = CustomKafkaUtils.getServerAddr();
-        
+		//Spark initialization
+		SparkSession sparkSession = SparkUtils.getSession();
+		SparkStreamingInterface sparkStreaming = SparkUtils.getSparkStreaming();
 		
-		Dataset<Row> completed = SparkUtils.getStructuredStream(spark, "completed", kafkaServer);
-	
-		StreamingQuery completedPerHour = completed
-				.selectExpr("CAST(value AS STRING)", "CAST(timestamp AS TIMESTAMP)")
-				.withColumn("day",
-					    to_date(col("timestamp"),"yyyy-MM-dd"))
-				.withColumn("hour", 
-						hour(col("timestamp")))
-				.groupBy(col("day"),col("hour"))
-				.count()
-				.writeStream()
-                .outputMode("complete")
-                .format("console")
-                .trigger(Trigger.ProcessingTime("1 minute"))
-                .queryName("Completed tasks per Hour")
-                .start();
-		
-		
-		/*StreamingQuery completedPerDay = completed
-				.selectExpr("CAST(value AS STRING)", "CAST(timestamp AS TIMESTAMP)")
-				.withColumn("day",
-					    to_date(col("timestamp"),"yyyy-MM-dd"))
-				.groupBy(col("day"))
-				.count()
-				.writeStream()
-                .outputMode("complete")
-                .format("console")
-                .trigger(Trigger.ProcessingTime("1 minute"))
-                .queryName("Completed tasks per day")
-                .start();
-		
-		StreamingQuery completedPerWeek = completed
-				.selectExpr("CAST(value AS STRING)", "CAST(timestamp AS TIMESTAMP)")
-				.withColumn("year",
-					    year(col("timestamp")))
-				.withColumn("week", 
-						weekofyear(col("timestamp")))
-				.groupBy(col("year"), col("week"))
-				.count()
-				.writeStream()
-                .outputMode("complete")
-                .format("console")
-                .trigger(Trigger.ProcessingTime("1 minute"))
-                .queryName("Completed tasks per week")
-                .start();
-		
-		StreamingQuery completedPerMonth = completed
-				.selectExpr("CAST(value AS STRING)", "CAST(timestamp AS TIMESTAMP)")
-				.withColumn("year",
-					    year(col("timestamp")))
-				.withColumn("month", 
-						month(col("timestamp")))
-				.groupBy(col("year"), col("month"))
-				.count()
-				.writeStream()
-                .outputMode("complete")
-                .format("console")
-                .trigger(Trigger.ProcessingTime("1 minute"))
-                .queryName("Completed tasks per month")
-                .start();*/
+		//Initialize the Streams
+		SparkUtils.setStreams(sparkSession, sparkStreaming, WATERMARK);
 
-	
-		try {
-			completedPerHour.awaitTermination();
-			/*completedPerDay.awaitTermination();
-			completedPerWeek.awaitTermination();
-			completedPerMonth.awaitTermination();*/
-			
-        } catch (final StreamingQueryException e) {
-            e.printStackTrace();
-        }
+		//Create the queries
+		sparkStreaming.buildQueries(SPARK_QUERIES);
+		
+		//Run the queries
+		List<StreamingQuery> queries = sparkStreaming.runQueries();
+		
 
-
-        spark.close();
+		//Termination
+		sparkStreaming.waitQueriesTermination(queries);
+		sparkSession.close();
 	}
+	
+	
 
 }
