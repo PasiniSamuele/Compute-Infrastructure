@@ -21,6 +21,7 @@ public class StoreKeeperActor extends AbstractLoggingActor {
     private final KafkaProducer<String, String> kafkaProducer;
 
     public StoreKeeperActor(String kafka) {
+        // FIXME. Shall not be hardcoded
         this.registryActor = getContext().actorSelection("akka://cluster@127.0.0.1:7777/user/taskRegistryActor");
 
         final Properties props = new Properties();
@@ -32,7 +33,7 @@ public class StoreKeeperActor extends AbstractLoggingActor {
     }
 
     public static Props props(String kafka) {
-        return Props.create(StoreKeeperActor.class, () -> new StoreKeeperActor(kafka));
+        return Props.create(StoreKeeperActor.class, kafka);
     }
 
     @Override

@@ -23,6 +23,8 @@ public class WorkerActor extends AbstractLoggingActor {
     private final static String primeOutput = "Prime task executed!%nTask UUID: %s%nUpper Bound: %d";
 
     public WorkerActor(String kafka) {
+
+        // FIXME. Shall not be hardcoded
         this.storeKeeper = getContext().actorSelection("akka://cluster@127.0.0.1:25565/user/storeKeeper");
 
         final Properties props = new Properties();
@@ -34,7 +36,7 @@ public class WorkerActor extends AbstractLoggingActor {
     }
 
     public static Props props(String kafka) {
-        return Props.create(WorkerActor.class, new WorkerActor(kafka));
+        return Props.create(WorkerActor.class, kafka);
     }
 
     @Override
