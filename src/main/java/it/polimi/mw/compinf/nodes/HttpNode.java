@@ -11,8 +11,8 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CompletionStage;
 
 public class HttpNode extends Node {
-    public HttpNode(String port, String seed) {
-        super("http", port, seed, "");
+    public HttpNode(String port, String seed, String kafka) {
+        super("http", port, seed, kafka);
     }
 
     @Override
@@ -22,7 +22,7 @@ public class HttpNode extends Node {
 
         AkkaManagement.get(actorSystem).start();
 
-        ActorRef taskRegistryActor = actorSystem.actorOf(TaskRegistryActor.props(), "taskRegistryActor");
+        ActorRef taskRegistryActor = actorSystem.actorOf(TaskRegistryActor.props(kafka), "taskRegistryActor");
 
         TaskRoutes taskRoutes = new TaskRoutes(actorSystem, taskRegistryActor);
         CompletionStage<ServerBinding> futureBinding = Http.get(actorSystem).newServerAt("localhost", 40000).bind(taskRoutes.taskRoutes());

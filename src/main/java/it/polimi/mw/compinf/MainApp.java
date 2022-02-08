@@ -26,7 +26,7 @@ public class MainApp {
     }
 
     public static void main(String[] args) {
-        if (args.length < 3) {
+        if (args.length < 4) {
             System.out.println("Invalid parameters!");
             return;
         }
@@ -47,7 +47,7 @@ public class MainApp {
             return;
         }
 
-        String seedNode = "";
+        String seedNode;
         if (!isValidAddress(args[2])) {
             System.out.println("Invalid seed node address!");
             return;
@@ -55,19 +55,17 @@ public class MainApp {
             seedNode = args[2];
         }
 
-        String kafkaAddr = "";
-        if (args.length == 4) {
-            if (!isValidAddress(args[3])) {
-                System.out.println("Invalid kafka address!");
-                return;
-            } else {
-                kafkaAddr = args[3];
-            }
+        String kafkaAddr;
+        if (!isValidAddress(args[3])) {
+            System.out.println("Invalid kafka address!");
+            return;
+        } else {
+            kafkaAddr = args[3];
         }
 
         switch (role) {
             case HTTP:
-                new HttpNode(Integer.toString(port), seedNode);
+                new HttpNode(Integer.toString(port), seedNode, kafkaAddr);
                 break;
             case STOREKEEPER:
                 new StoreKeeperNode(Integer.toString(port), seedNode, kafkaAddr);

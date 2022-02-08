@@ -2,7 +2,6 @@ package it.polimi.mw.compinf.actors;
 
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
 import akka.actor.Props;
 import akka.cluster.pubsub.DistributedPubSub;
 import akka.cluster.pubsub.DistributedPubSubMediator;
@@ -20,22 +19,19 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 public class StoreKeeperActor extends AbstractLoggingActor {
-    //private final ActorSelection registryActor;
+    private final ActorRef pubSubMediator;
     private final KafkaProducer<String, String> kafkaProducer;
 
     public StoreKeeperActor(String kafka) {
-        ActorRef mediator = DistributedPubSub.get(getContext().system()).mediator();
-        // subscribe to the topic named "StoreKeepers"
-        mediator.tell(new DistributedPubSubMediator.Subscribe("StoreKeepers", getSelf()), getSelf());
-
-        //this.registryActor = getContext().actorSelection("/user/taskRegistryActor");
+        pubSubMediator = DistributedPubSub.get(getContext().system()).mediator();
+        pubSubMediator.tell(new DistributedPubSubMediator.Subscribe("TaskResult", getSelf()), getSelf());
 
         final Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
-        this.kafkaProducer = new KafkaProducer<>(props);
+        kafkaProducer = new KafkaProducer<>(props);
     }
 
     public static Props props(String kafka) {
@@ -46,7 +42,8 @@ public class StoreKeeperActor extends AbstractLoggingActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(TaskResult.class, this::onTaskResult)
-                .match(DistributedPubSubMediator.SubscribeAck.class, msg -> log().info("subscribed"))
+                .match(DistributedPubSubMediator.SubscribeAck.class, msg -> log().info("Subscribed to 'TaskResult' topic"))
+                .matchAny(o -> log().info("Received unknown message"))
                 .build();
     }
 
@@ -58,7 +55,8 @@ public class StoreKeeperActor extends AbstractLoggingActor {
 
             kafkaProducer.send(new ProducerRecord<>("completed", null, result.getUUID().toString()));
 
-            //registryActor.tell(new TaskRegistryMessage.TaskExecutedMessage(result.getUUID()), self());
+            TaskRegistryMessage.TaskExecutedMessage taskExecuted = new TaskRegistryMessage.TaskExecutedMessage(result.getUUID());
+            pubSubMediator.tell(new DistributedPubSubMediator.Publish("TaskExecuted", taskExecuted), getSelf());
 
             log().info("Finished {}", result.getUUID());
         } catch (IOException e) {

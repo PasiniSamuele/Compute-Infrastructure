@@ -2,7 +2,6 @@ package it.polimi.mw.compinf.actors;
 
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
 import akka.actor.Props;
 import akka.cluster.pubsub.DistributedPubSub;
 import akka.cluster.pubsub.DistributedPubSubMediator;
@@ -18,27 +17,22 @@ import java.util.Random;
 import java.util.UUID;
 
 public class WorkerActor extends AbstractLoggingActor {
-    //private final ActorSelection storeKeeper;
+    private final ActorRef pubSubMediator;
     private final KafkaProducer<String, String> kafkaProducer;
 
     private final static String compressionOutput = "Compression task executed!%nTask UUID: %s%nCompression Ratio: %f";
     private final static String conversionOutput = "Conversion task executed!%nTask UUID: %s%nTarget Format: %s";
     private final static String primeOutput = "Prime task executed!%nTask UUID: %s%nUpper Bound: %d";
 
-    private final ActorRef mediator;
-
     public WorkerActor(String kafka) {
-        // activate the extension
-        mediator = DistributedPubSub.get(getContext().system()).mediator();
-
-        //this.storeKeeper = getContext().actorSelection("/user/storeKeeper");
+        pubSubMediator = DistributedPubSub.get(getContext().system()).mediator();
 
         final Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
-        this.kafkaProducer = new KafkaProducer<>(props);
+        kafkaProducer = new KafkaProducer<>(props);
     }
 
     public static Props props(String kafka) {
@@ -51,6 +45,7 @@ public class WorkerActor extends AbstractLoggingActor {
                 .match(CompressionTask.class, this::onCompressionTask)
                 .match(ConversionTask.class, this::onConversionTask)
                 .match(PrimeTask.class, this::onPrimeTask)
+                .matchAny(o -> log().info("Received unknown message"))
                 .build();
     }
 
@@ -101,8 +96,7 @@ public class WorkerActor extends AbstractLoggingActor {
 
     private void onFinishedTask(UUID uuid, byte[] file, String directoryName) {
         TaskResult taskResult = new TaskResult(uuid, file, directoryName);
-        mediator.tell(new DistributedPubSubMediator.Publish("StoreKeepers", taskResult), getSelf());
-        //storeKeeper.tell(taskResult, self());
+        pubSubMediator.tell(new DistributedPubSubMediator.Publish("TaskResult", taskResult), getSelf());
     }
 
     private void checkTaskFailure(Task task) throws Exception {
