@@ -48,6 +48,7 @@ public class TaskRegistryActor extends AbstractActor {
         this.actorRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
 
         final Properties props = new Properties();
+        // TODO change kafka here
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());

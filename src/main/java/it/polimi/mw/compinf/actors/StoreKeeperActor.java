@@ -1,8 +1,11 @@
 package it.polimi.mw.compinf.actors;
 
 import akka.actor.AbstractLoggingActor;
+import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
 import akka.actor.Props;
+import akka.cluster.pubsub.DistributedPubSub;
+import akka.cluster.pubsub.DistributedPubSubMediator;
 import it.polimi.mw.compinf.http.TaskRegistryMessage;
 import it.polimi.mw.compinf.tasks.TaskResult;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -17,12 +20,15 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 public class StoreKeeperActor extends AbstractLoggingActor {
-    private final ActorSelection registryActor;
+    //private final ActorSelection registryActor;
     private final KafkaProducer<String, String> kafkaProducer;
 
     public StoreKeeperActor(String kafka) {
-        // FIXME. Shall not be hardcoded
-        this.registryActor = getContext().actorSelection("akka://cluster@127.0.0.1:7777/user/taskRegistryActor");
+        ActorRef mediator = DistributedPubSub.get(getContext().system()).mediator();
+        // subscribe to the topic named "StoreKeepers"
+        mediator.tell(new DistributedPubSubMediator.Subscribe("StoreKeepers", getSelf()), getSelf());
+
+        //this.registryActor = getContext().actorSelection("/user/taskRegistryActor");
 
         final Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka);
@@ -40,6 +46,7 @@ public class StoreKeeperActor extends AbstractLoggingActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(TaskResult.class, this::onTaskResult)
+                .match(DistributedPubSubMediator.SubscribeAck.class, msg -> log().info("subscribed"))
                 .build();
     }
 
@@ -51,7 +58,7 @@ public class StoreKeeperActor extends AbstractLoggingActor {
 
             kafkaProducer.send(new ProducerRecord<>("completed", null, result.getUUID().toString()));
 
-            registryActor.tell(new TaskRegistryMessage.TaskExecutedMessage(result.getUUID()), self());
+            //registryActor.tell(new TaskRegistryMessage.TaskExecutedMessage(result.getUUID()), self());
 
             log().info("Finished {}", result.getUUID());
         } catch (IOException e) {
