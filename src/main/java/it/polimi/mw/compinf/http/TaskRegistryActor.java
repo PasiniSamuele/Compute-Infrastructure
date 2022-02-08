@@ -1,12 +1,9 @@
 package it.polimi.mw.compinf.http;
 
 import akka.NotUsed;
-import akka.actor.AbstractActor;
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.Status;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
+import akka.actor.*;
+import akka.cluster.pubsub.DistributedPubSub;
+import akka.cluster.pubsub.DistributedPubSubMediator;
 import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.japi.Pair;
 import akka.routing.FromConfig;
@@ -31,33 +28,34 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-
 import static it.polimi.mw.compinf.http.TaskRegistryMessage.*;
 
-public class TaskRegistryActor extends AbstractActor {
+public class TaskRegistryActor extends AbstractLoggingActor {
     private final ActorRef actorRouter;
     private final KafkaProducer<String, String> kafkaProducer;
 
-    private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
     private final Map<UUID, Optional<Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>>> sourceMap;
     private final Materializer mat;
 
-    public TaskRegistryActor() {
-        this.sourceMap = new ConcurrentHashMap<>();
-        this.mat = Materializer.createMaterializer(getContext());
-        this.actorRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
+    public TaskRegistryActor(String kafka) {
+        sourceMap = new ConcurrentHashMap<>();
+        mat = Materializer.createMaterializer(getContext());
+        actorRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
+
+        ActorRef pubSubMediator = DistributedPubSub.get(getContext().system()).mediator();
+        pubSubMediator.tell(new DistributedPubSubMediator.Subscribe("TaskExecuted", getSelf()), getSelf());
 
         final Properties props = new Properties();
-        // TODO change kafka here
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
-        this.kafkaProducer = new KafkaProducer<>(props);
+        kafkaProducer = new KafkaProducer<>(props);
     }
 
-    public static Props props() {
-        return Props.create(TaskRegistryActor.class);
+    public static Props props(String kafka) {
+        return Props.create(TaskRegistryActor.class, kafka);
     }
 
     @Override
@@ -68,7 +66,8 @@ public class TaskRegistryActor extends AbstractActor {
                 .match(CreatePrimeMessage.class, this::onCreatePrimeMessage)
                 .match(CreateSSEMessage.class, this::onCreateSSE)
                 .match(TaskExecutedMessage.class, this::onTaskExecuted)
-                .matchAny(o -> log.info("received unknown message"))
+                .match(DistributedPubSubMediator.SubscribeAck.class, msg -> log().info("Subscribed to 'TaskExecuted' topic"))
+                .matchAny(o -> log().info("Received unknown message"))
                 .build();
     }
 
@@ -145,7 +144,7 @@ public class TaskRegistryActor extends AbstractActor {
 
         // Invalid UUID provided
         if (!sourceMap.containsKey(uuid)) {
-            log.error("Invalid task executed with UUID: {}", te.getUUID());
+            log().error("Invalid task executed with UUID: {}", te.getUUID());
             return;
         }
 
@@ -156,7 +155,7 @@ public class TaskRegistryActor extends AbstractActor {
             currPair.first().complete();
         } else {
             // Nobody connected to SSE for task updates
-            log.info("Nobody connected to SSE for task with UUID: {}", te.getUUID());
+            log().info("Nobody connected to SSE for task with UUID: {}", te.getUUID());
         }
 
         sourceMap.remove(uuid);
