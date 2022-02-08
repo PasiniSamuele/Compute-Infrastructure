@@ -12,7 +12,7 @@ helpCluster() {
 helpNode() {
   echo "Use the node command to start, stop a specific cluster node."
   echo
-  echo "./akka node start [role] [port] [seed node] {[kafka server]}  # Start the specified cluster node."
+  echo "./akka node start [role] [port] [seed node] [kafka server]    # Start the specified cluster node."
   echo "./akka node stop [port]                                       # Stop the specified cluster node."
 }
 
@@ -29,7 +29,6 @@ helpAll() {
 
 clusterCommand() {
   command=$1
-  argument=$2
 
   case $command in
     "start")
@@ -49,7 +48,7 @@ clusterCommand() {
 
 nodeCommand() {
   command=$1
-  argument=$2
+  argument=("$@")
 
   case $command in
     "start")
@@ -68,10 +67,10 @@ command() {
   command=$1
   subCommand=$2
   argument=$3
-
+  
   case $command in
     "cluster")
-      clusterCommand $subCommand $argument
+      clusterCommand $subCommand
       ;;
     "node")
       nodeCommand $subCommand $argument
