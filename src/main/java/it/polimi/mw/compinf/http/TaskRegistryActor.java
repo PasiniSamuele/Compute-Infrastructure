@@ -2,6 +2,8 @@ package it.polimi.mw.compinf.http;
 
 import akka.NotUsed;
 import akka.actor.*;
+import akka.cluster.Cluster;
+import akka.cluster.MemberStatus;
 import akka.cluster.pubsub.DistributedPubSub;
 import akka.cluster.pubsub.DistributedPubSubMediator;
 import akka.http.javadsl.model.sse.ServerSentEvent;
@@ -36,8 +38,10 @@ public class TaskRegistryActor extends AbstractLoggingActor {
 
     private final Map<UUID, Optional<Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>>> sourceMap;
     private final Materializer mat;
+    private final Cluster cluster;
 
     public TaskRegistryActor(String kafka) {
+        cluster = Cluster.get(getContext().getSystem());
         sourceMap = new ConcurrentHashMap<>();
         mat = Materializer.createMaterializer(getContext());
         actorRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
@@ -72,35 +76,47 @@ public class TaskRegistryActor extends AbstractLoggingActor {
     }
 
     private void onCreateCompressionMessage(CreateCompressionMessage ccm) {
+        if  (cluster.selfMember().status() != MemberStatus.up()) {
+            getSender().tell(new TaskFailedMessage(), getSelf());
+            return;
+        }
+
         CompressionTask compressionTask = ccm.getCompressionTask();
 
         actorRouter.tell(compressionTask, getSelf());
         sourceMap.put(compressionTask.getUUID(), Optional.empty());
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, compressionTask.getUUID().toString()));
-
         getSender().tell(new TaskCreationMessage("Compression task submitted successfully!", compressionTask.getUUID()), getSelf());
     }
 
     private void onCreateConversionMessage(CreateConversionMessage ccm) {
+        if  (cluster.selfMember().status() != MemberStatus.up()) {
+            getSender().tell(new TaskFailedMessage(), getSelf());
+            return;
+        }
+
         ConversionTask conversionTask = ccm.getConversionTask();
 
         actorRouter.tell(conversionTask, getSelf());
         sourceMap.put(conversionTask.getUUID(), Optional.empty());
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, conversionTask.getUUID().toString()));
-
         getSender().tell(new TaskCreationMessage("Conversion task submitted successfully!", conversionTask.getUUID()), getSelf());
     }
 
     private void onCreatePrimeMessage(CreatePrimeMessage cpm) {
+        if  (cluster.selfMember().status() != MemberStatus.up()) {
+            getSender().tell(new TaskFailedMessage(), getSelf());
+            return;
+        }
+
         PrimeTask primeTask = cpm.getPrimeTask();
 
         actorRouter.tell(primeTask, getSelf());
         sourceMap.put(primeTask.getUUID(), Optional.empty());
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, primeTask.getUUID().toString()));
-
         getSender().tell(new TaskCreationMessage("Prime task submitted successfully!", primeTask.getUUID()), getSelf());
     }
 
@@ -160,5 +176,4 @@ public class TaskRegistryActor extends AbstractLoggingActor {
 
         sourceMap.remove(uuid);
     }
-
 }

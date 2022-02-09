@@ -30,6 +30,10 @@ public interface TaskRegistryMessage {
         }
     }
 
+    class TaskFailedMessage implements CborSerializable {
+
+    }
+
     class CreateCompressionMessage implements CborSerializable {
         private final CompressionTask compressionTask;
 

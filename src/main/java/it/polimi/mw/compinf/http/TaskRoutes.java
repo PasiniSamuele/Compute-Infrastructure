@@ -87,10 +87,18 @@ public class TaskRoutes extends AllDirectives {
                 post(() ->
                         entity(
                                 Jackson.unmarshaller(CompressionTask.class),
-                                task -> onSuccess(createCompressionMessage(task), msg -> {
-                                    log.info("Compression task accepted with UUID: {}", msg.getMessage());
-                                    return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
-                                })
+                                task -> onComplete(createCompressionMessage(task),
+                                        result -> {
+                                            if (result.isFailure()) {
+                                                log.warn("Compression task refused due to cluster unavailability");
+                                                return complete(StatusCodes.SERVICE_UNAVAILABLE);
+                                            } else {
+                                                TaskRegistryMessage.TaskCreationMessage msg = result.get();
+                                                log.info("Compression task accepted with UUID: {}", msg.getMessage());
+                                                return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
+                                            }
+                                        }
+                                )
                         )
                 )
         ));
@@ -101,10 +109,18 @@ public class TaskRoutes extends AllDirectives {
                 post(() ->
                         entity(
                                 Jackson.unmarshaller(ConversionTask.class),
-                                task -> onSuccess(createConversionMessage(task), msg -> {
-                                    log.info("Conversion task accepted with UUID: {}", msg.getMessage());
-                                    return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
-                                })
+                                task -> onComplete(createConversionMessage(task),
+                                        result -> {
+                                            if (result.isFailure()) {
+                                                log.warn("Conversion task refused due to cluster unavailability");
+                                                return complete(StatusCodes.SERVICE_UNAVAILABLE);
+                                            } else {
+                                                TaskRegistryMessage.TaskCreationMessage msg = result.get();
+                                                log.info("Conversion task accepted with UUID: {}", msg.getMessage());
+                                                return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
+                                            }
+                                        }
+                                )
                         )
                 )
         ));
@@ -115,10 +131,18 @@ public class TaskRoutes extends AllDirectives {
                 post(() ->
                         entity(
                                 Jackson.unmarshaller(PrimeTask.class),
-                                task -> onSuccess(createPrimeMessage(task), msg -> {
-                                    log.info("Prime task accepted with UUID: {}", msg.getMessage());
-                                    return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
-                                })
+                                task -> onComplete(createPrimeMessage(task),
+                                        result -> {
+                                            if (result.isFailure()) {
+                                                log.warn("Prime task refused due to cluster unavailability");
+                                                return complete(StatusCodes.SERVICE_UNAVAILABLE);
+                                            } else {
+                                                TaskRegistryMessage.TaskCreationMessage msg = result.get();
+                                                log.info("Prime task accepted with UUID: {}", msg.getMessage());
+                                                return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
+                                            }
+                                        }
+                                )
                         )
                 )
         ));
