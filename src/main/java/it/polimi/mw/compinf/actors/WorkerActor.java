@@ -115,7 +115,7 @@ public class WorkerActor extends AbstractLoggingActor {
         if (message.isPresent()) {
             try {
                 Task taskMessage = (Task) message.get();
-                log().warning("Restarting task {} due to failure", taskMessage.getDirectoryName());
+                log().warning("Restarting task {} due to failure", taskMessage.getUUID());
 
                 // Resending the message with a higher priority in order to process it first and decrease the number of remaining failures
                 getContext().getSelf().tell(taskMessage.increasePriority().decreaseFailure(), getContext().getSender());
