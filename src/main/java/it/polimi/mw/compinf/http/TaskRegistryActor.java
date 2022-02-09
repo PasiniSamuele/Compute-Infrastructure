@@ -14,6 +14,7 @@ import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
+import it.polimi.mw.compinf.exceptions.ClusterUnavailableException;
 import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 import it.polimi.mw.compinf.tasks.ConversionTask;
@@ -77,7 +78,7 @@ public class TaskRegistryActor extends AbstractLoggingActor {
 
     private void onCreateCompressionMessage(CreateCompressionMessage ccm) {
         if  (cluster.selfMember().status() != MemberStatus.up()) {
-            getSender().tell(new TaskFailedMessage(), getSelf());
+            getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
             return;
         }
 
@@ -92,7 +93,7 @@ public class TaskRegistryActor extends AbstractLoggingActor {
 
     private void onCreateConversionMessage(CreateConversionMessage ccm) {
         if  (cluster.selfMember().status() != MemberStatus.up()) {
-            getSender().tell(new TaskFailedMessage(), getSelf());
+            getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
             return;
         }
 
@@ -107,7 +108,7 @@ public class TaskRegistryActor extends AbstractLoggingActor {
 
     private void onCreatePrimeMessage(CreatePrimeMessage cpm) {
         if  (cluster.selfMember().status() != MemberStatus.up()) {
-            getSender().tell(new TaskFailedMessage(), getSelf());
+            getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
             return;
         }
 
@@ -121,6 +122,11 @@ public class TaskRegistryActor extends AbstractLoggingActor {
     }
 
     private void onCreateSSE(CreateSSEMessage csse) {
+        if  (cluster.selfMember().status() != MemberStatus.up()) {
+            getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
+            return;
+        }
+
         UUID uuid = csse.getUUID();
 
         // Check invalid UUID
