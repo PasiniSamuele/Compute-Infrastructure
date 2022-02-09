@@ -10,19 +10,19 @@ startNode() {
   seed=$3
   kafka=$4
 
-  path=$(pwd -P)
-  jarFilename="compute-infrastructure-akka-node.jar"
+  scriptPath=$(dirname $0)
+  scriptPathFull=$(cd $(dirname $0) ; pwd -P)
+  jarFilename="$scriptPath/target/compute-infrastructure-akka-node.jar"
+  logFilename="$scriptPath/log/$role-$(date +%s).log"
 
-  echo "Starting $role on port $port"
-  java -jar $path/target/$jarFilename $role $port $seed $kafka
+  echo "Starting $role node on port $port"
+  java -jar $jarFilename $role $port $seed $kafka &> $logFilename &
 }
-
-echo $#
 
 [ $# -eq 0 ] && usage
 
-if [ $# -eq 10 ] ; then
-  startNode $node
+if [ $# -eq 4 ] ; then
+  startNode "$@"
 else
   echo "Invalid parameters."
   usage

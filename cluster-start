@@ -1,1 +1,6 @@
 #!/bin/bash
+
+scriptPath=$(dirname $0)
+$scriptPath/node-start HTTP 25565 127.0.0.1:25565 127.0.0.1:9092
+$scriptPath/node-start STOREKEEPER 25566 127.0.0.1:25565 127.0.0.1:9092
+$scriptPath/node-start WORKER 25567 127.0.0.1:25565 127.0.0.1:9092
