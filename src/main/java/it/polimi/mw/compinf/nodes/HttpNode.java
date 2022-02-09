@@ -25,7 +25,7 @@ public class HttpNode extends Node {
         ActorRef taskRegistryActor = actorSystem.actorOf(TaskRegistryActor.props(kafka), "taskRegistryActor");
 
         TaskRoutes taskRoutes = new TaskRoutes(actorSystem, taskRegistryActor);
-        CompletionStage<ServerBinding> futureBinding = Http.get(actorSystem).newServerAt("localhost", 40000).bind(taskRoutes.taskRoutes());
+        CompletionStage<ServerBinding> futureBinding = Http.get(actorSystem).newServerAt("0.0.0.0", 40000).bind(taskRoutes.taskRoutes());
 
         futureBinding.whenComplete((binding, exception) -> {
             if (binding != null) {

@@ -12,8 +12,8 @@ helpCluster() {
 helpNode() {
   echo "Use the node command to start, stop a specific cluster node."
   echo
-  echo "./akka node start [role] [port] [seed node] [kafka server]    # Start the specified cluster node."
-  echo "./akka node stop [role] [port]                                # Stop the specified cluster node."
+  echo "./akka node start [port] [role] [seed node] [kafka server]    # Start the specified cluster node."
+  echo "./akka node stop [port]                                       # Stop the specified cluster node."
 }
 
 helpAll() {

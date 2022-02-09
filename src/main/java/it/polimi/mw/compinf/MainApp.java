@@ -31,19 +31,19 @@ public class MainApp {
             return;
         }
 
-        Role role;
+        int port;
         try {
-            role = Role.valueOf(args[0].toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            System.out.println("Invalid node role!");
+            port = Integer.parseInt(args[0]);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid node port!");
             return;
         }
 
-        int port;
+        Role role;
         try {
-            port = Integer.parseInt(args[1]);
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid node port!");
+            role = Role.valueOf(args[1].toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid node role!");
             return;
         }
 

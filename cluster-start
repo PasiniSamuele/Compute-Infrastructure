@@ -1,6 +1,8 @@
 #!/bin/bash
 
+localIp=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
 scriptPath=$(dirname $0)
-$scriptPath/node-start HTTP 25565 127.0.0.1:25565 127.0.0.1:9092
-$scriptPath/node-start STOREKEEPER 25566 127.0.0.1:25565 127.0.0.1:9092
-$scriptPath/node-start WORKER 25567 127.0.0.1:25565 127.0.0.1:9092
+
+$scriptPath/node-start 25565 HTTP $localIp:25565 127.0.0.1:9092
+$scriptPath/node-start 25566 STOREKEEPER $localIp:25565 127.0.0.1:9092
+$scriptPath/node-start 25567 WORKER $localIp:25565 127.0.0.1:9092

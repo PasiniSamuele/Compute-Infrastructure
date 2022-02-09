@@ -1,6 +1,6 @@
 #!/bin/bash
 
 scriptPath=$(dirname $0)
-$scriptPath/node-stop HTTP 25565
-$scriptPath/node-stop STOREKEEPER 25566
-$scriptPath/node-stop WORKER 25567
+$scriptPath/node-stop 25565
+$scriptPath/node-stop 25566
+$scriptPath/node-stop 25567

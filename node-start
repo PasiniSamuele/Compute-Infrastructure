@@ -1,14 +1,17 @@
 #!/bin/bash
 
 usage() {
-  echo "Usage: akka node start [role] [port] [seed node] [kafka server]" ; exit 1
+  echo "Usage: akka node start [port] [role] [seed node] [kafka server]" ; exit 1
 }
 
 startNode() {
-  role=$1
-  port=$2
+  port=$1
+  role=$2
   seed=$3
   kafka=$4
+
+  localIp=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+  export local_ip=$localIp
 
   scriptPath=$(dirname $0)
   scriptPathFull=$(cd $(dirname $0) ; pwd -P)
@@ -16,7 +19,7 @@ startNode() {
   logFilename="$scriptPath/log/$role-$(date +%s).log"
 
   echo "Starting $role node on port $port"
-  java -jar $jarFilename $role $port $seed $kafka &> $logFilename &
+  java -jar $jarFilename $port $role $seed $kafka &> $logFilename &
 }
 
 [ $# -eq 0 ] && usage
