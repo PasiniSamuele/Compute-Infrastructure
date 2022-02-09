@@ -13,7 +13,7 @@ helpNode() {
   echo "Use the node command to start, stop a specific cluster node."
   echo
   echo "./akka node start [role] [port] [seed node] [kafka server]    # Start the specified cluster node."
-  echo "./akka node stop [port]                                       # Stop the specified cluster node."
+  echo "./akka node stop [role] [port]                                # Stop the specified cluster node."
 }
 
 helpAll() {
@@ -48,7 +48,7 @@ clusterCommand() {
 
 nodeCommand() {
   command=$1
-  argument=("$@")
+  argument="${@:2}"
 
   case $command in
     "start")
@@ -66,7 +66,7 @@ nodeCommand() {
 command() {
   command=$1
   subCommand=$2
-  argument=$3
+  argument="${@:3}"
   
   case $command in
     "cluster")
@@ -88,5 +88,5 @@ scriptPath=$(dirname $0)
 if [ $# -eq 0 ] ; then
   helpAll
 else
-  command $1 $2 $3
+  command $1 $2 "${@:3}"
 fi

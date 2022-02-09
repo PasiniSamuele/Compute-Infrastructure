@@ -22,6 +22,8 @@ public class StoreKeeperActor extends AbstractLoggingActor {
     private final ActorRef pubSubMediator;
     private final KafkaProducer<String, String> kafkaProducer;
 
+    private final String BASE_DIRECTORY = "results/";
+
     public StoreKeeperActor(String kafka) {
         pubSubMediator = DistributedPubSub.get(getContext().system()).mediator();
         pubSubMediator.tell(new DistributedPubSubMediator.Subscribe("TaskResult", getSelf()), getSelf());
@@ -50,11 +52,10 @@ public class StoreKeeperActor extends AbstractLoggingActor {
     private void onTaskResult(TaskResult result) {
         // Creates directory if it does not exist and file
         try {
-            Files.createDirectories(Path.of(result.getDirectoryName()));
-            Files.write(Path.of(result.getDirectoryName() + File.separator + result.getUUID()), result.getFile());
+            Files.createDirectories(Path.of(BASE_DIRECTORY + result.getDirectoryName()));
+            Files.write(Path.of(BASE_DIRECTORY + result.getDirectoryName() + File.separator + result.getUUID()), result.getFile());
 
             kafkaProducer.send(new ProducerRecord<>("completed", null, result.getUUID().toString()));
-
             TaskRegistryMessage.TaskExecutedMessage taskExecuted = new TaskRegistryMessage.TaskExecutedMessage(result.getUUID());
             pubSubMediator.tell(new DistributedPubSubMediator.Publish("TaskExecuted", taskExecuted), getSelf());
 

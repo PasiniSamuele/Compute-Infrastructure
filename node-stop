@@ -1,1 +1,24 @@
 #!/bin/bash
+
+usage() {
+  echo "Usage: akka node stop [role] [port]" ; exit 1
+}
+
+stopNode() {
+  role=$1
+  port=$2
+
+  node="compute-infrastructure-akka-node.jar $role $port"
+
+  echo "Stopping $role node on port $port"
+  pkill -f "$node"
+}
+
+[ $# -eq 0 ] && usage
+
+if [ $# -eq 2 ] ; then
+  stopNode "$@"
+else
+  echo "Invalid parameters."
+  usage
+fi
