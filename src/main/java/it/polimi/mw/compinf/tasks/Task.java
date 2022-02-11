@@ -9,14 +9,14 @@ public abstract class Task implements CborSerializable {
     private final String directoryName;
     private int forceFailure;
     private int priority;
-    //protected String name;
+    protected String name;
 
     public Task(String directoryName, int priority, int forceFailure) {
         this.uuid = UUID.randomUUID();
         this.directoryName = directoryName;
         this.priority = priority;
         this.forceFailure = forceFailure;
-        //this.name = "";
+        this.name = "";
     }
 
     public Task(String directoryName, int forceFailure) {
@@ -53,7 +53,7 @@ public abstract class Task implements CborSerializable {
         return this;
     }
 
-    /*public String getName() {
+    public String getName() {
         return name;
-    }*/
+    }
 }

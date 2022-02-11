@@ -118,12 +118,10 @@ public class TaskRoutes extends AllDirectives {
         return onSuccess(createTaskMessage(task),
                 msg -> {
                     if (msg.getUUID() == null) {
-                        //log.error("{} task refused due to cluster unavailability", task.getName());
-                        log.error("task refused due to cluster unavailability");
+                        log.error("{} task refused due to cluster unavailability", task.getName());
                         return complete(StatusCodes.SERVICE_UNAVAILABLE);
                     } else {
-                        //log.info("{} task accepted with UUID: {}", task.getName(), msg.getMessage());
-                        log.info("task accepted with UUID: {}", msg.getMessage());
+                        log.info("{} task accepted with UUID: {}", task.getName(), msg.getMessage());
                         return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
                     }
                 }
