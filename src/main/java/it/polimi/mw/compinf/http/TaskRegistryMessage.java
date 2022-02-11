@@ -5,6 +5,7 @@ import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import it.polimi.mw.compinf.tasks.PrimeTask;
+import it.polimi.mw.compinf.tasks.Task;
 import it.polimi.mw.compinf.util.CborSerializable;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 import it.polimi.mw.compinf.tasks.ConversionTask;
@@ -30,43 +31,15 @@ public interface TaskRegistryMessage {
         }
     }
 
-    class TaskFailedMessage implements CborSerializable {
+    class CreateTaskMessage implements CborSerializable {
+        private final Task task;
 
-    }
-
-    class CreateCompressionMessage implements CborSerializable {
-        private final CompressionTask compressionTask;
-
-        public CreateCompressionMessage(CompressionTask compressionTask) {
-            this.compressionTask = compressionTask;
+        public CreateTaskMessage(Task task) {
+            this.task = task;
         }
 
-        public CompressionTask getCompressionTask() {
-            return compressionTask;
-        }
-    }
-
-    class CreatePrimeMessage implements CborSerializable {
-        private final PrimeTask primeTask;
-
-        public CreatePrimeMessage(PrimeTask primeTask) {
-            this.primeTask = primeTask;
-        }
-
-        public PrimeTask getPrimeTask() {
-            return primeTask;
-        }
-    }
-
-    class CreateConversionMessage implements CborSerializable {
-        private final ConversionTask conversionTask;
-
-        public CreateConversionMessage(ConversionTask conversionTask) {
-            this.conversionTask = conversionTask;
-        }
-
-        public ConversionTask getConversionTask() {
-            return conversionTask;
+        public Task getTask() {
+            return task;
         }
     }
 

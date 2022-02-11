@@ -16,9 +16,7 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueueWithComplete;
 import it.polimi.mw.compinf.exceptions.ClusterUnavailableException;
 import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
-import it.polimi.mw.compinf.tasks.CompressionTask;
-import it.polimi.mw.compinf.tasks.ConversionTask;
-import it.polimi.mw.compinf.tasks.PrimeTask;
+import it.polimi.mw.compinf.tasks.Task;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -34,22 +32,30 @@ import java.util.concurrent.ConcurrentHashMap;
 import static it.polimi.mw.compinf.http.TaskRegistryMessage.*;
 
 public class TaskRegistryActor extends AbstractLoggingActor {
-    private final ActorRef actorRouter;
+    private final ActorRef workerNodeRouter;
     private final KafkaProducer<String, String> kafkaProducer;
 
     private final Map<UUID, Optional<Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>>> sourceMap;
     private final Materializer mat;
     private final Cluster cluster;
 
+    /**
+     * This actor handles all the requests from the HTTP node and dispatch messages through the compute infrastructure.
+     *
+     * @param kafka kafka address:port.
+     */
     public TaskRegistryActor(String kafka) {
         cluster = Cluster.get(getContext().getSystem());
         sourceMap = new ConcurrentHashMap<>();
         mat = Materializer.createMaterializer(getContext());
-        actorRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
+        workerNodeRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
 
+        // Distributed pub/sub to make Akka actors communicate through the TaskExecuted topic
+        // without knowing their addresses/locations.
         ActorRef pubSubMediator = DistributedPubSub.get(getContext().system()).mediator();
         pubSubMediator.tell(new DistributedPubSubMediator.Subscribe("TaskExecuted", getSelf()), getSelf());
 
+        // Initialize kafka
         final Properties props = new Properties();
 
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka);
@@ -66,9 +72,7 @@ public class TaskRegistryActor extends AbstractLoggingActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(CreateCompressionMessage.class, this::onCreateCompressionMessage)
-                .match(CreateConversionMessage.class, this::onCreateConversionMessage)
-                .match(CreatePrimeMessage.class, this::onCreatePrimeMessage)
+                .match(CreateTaskMessage.class, this::onCreateTaskMessage)
                 .match(CreateSSEMessage.class, this::onCreateSSE)
                 .match(TaskExecutedMessage.class, this::onTaskExecuted)
                 .match(DistributedPubSubMediator.SubscribeAck.class, msg -> log().info("Subscribed to 'TaskExecuted' topic"))
@@ -76,49 +80,21 @@ public class TaskRegistryActor extends AbstractLoggingActor {
                 .build();
     }
 
-    private void onCreateCompressionMessage(CreateCompressionMessage ccm) {
+    private void onCreateTaskMessage(CreateTaskMessage ctm) {
+        // Check if cluster is up and in a safe status.
         if  (cluster.selfMember().status() != MemberStatus.up()) {
             getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
             return;
         }
 
-        CompressionTask compressionTask = ccm.getCompressionTask();
+        Task task = ctm.getTask();
 
-        actorRouter.tell(compressionTask, getSelf());
-        sourceMap.put(compressionTask.getUUID(), Optional.empty());
+        // Send the actual compression task to the worker router.
+        workerNodeRouter.tell(task, getSelf());
+        sourceMap.put(task.getUUID(), Optional.empty());
 
-        kafkaProducer.send(new ProducerRecord<>("pending", null, compressionTask.getUUID().toString()));
-        getSender().tell(new TaskCreationMessage("Compression task submitted successfully!", compressionTask.getUUID()), getSelf());
-    }
-
-    private void onCreateConversionMessage(CreateConversionMessage ccm) {
-        if  (cluster.selfMember().status() != MemberStatus.up()) {
-            getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
-            return;
-        }
-
-        ConversionTask conversionTask = ccm.getConversionTask();
-
-        actorRouter.tell(conversionTask, getSelf());
-        sourceMap.put(conversionTask.getUUID(), Optional.empty());
-
-        kafkaProducer.send(new ProducerRecord<>("pending", null, conversionTask.getUUID().toString()));
-        getSender().tell(new TaskCreationMessage("Conversion task submitted successfully!", conversionTask.getUUID()), getSelf());
-    }
-
-    private void onCreatePrimeMessage(CreatePrimeMessage cpm) {
-        if  (cluster.selfMember().status() != MemberStatus.up()) {
-            getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
-            return;
-        }
-
-        PrimeTask primeTask = cpm.getPrimeTask();
-
-        actorRouter.tell(primeTask, getSelf());
-        sourceMap.put(primeTask.getUUID(), Optional.empty());
-
-        kafkaProducer.send(new ProducerRecord<>("pending", null, primeTask.getUUID().toString()));
-        getSender().tell(new TaskCreationMessage("Prime task submitted successfully!", primeTask.getUUID()), getSelf());
+        kafkaProducer.send(new ProducerRecord<>("pending", null, task.getUUID().toString()));
+        getSender().tell(new TaskCreationMessage(/*task.getName() + */" task submitted successfully!", task.getUUID()), getSelf());
     }
 
     private void onCreateSSE(CreateSSEMessage csse) {

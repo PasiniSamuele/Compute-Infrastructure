@@ -13,6 +13,7 @@ public class CompressionTask extends Task {
             @JsonProperty("forceFailure") int forceFailure) {
         super(directoryName, forceFailure);
         this.compressionRatio = compressionRatio;
+        //this.name = "Compression";
     }
 
     public double getCompressionRatio() {

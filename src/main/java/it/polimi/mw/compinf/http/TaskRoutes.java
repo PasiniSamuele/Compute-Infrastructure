@@ -14,6 +14,7 @@ import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 import it.polimi.mw.compinf.tasks.ConversionTask;
 import it.polimi.mw.compinf.tasks.PrimeTask;
+import it.polimi.mw.compinf.tasks.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Routes can be defined in separated classes like shown in here
+ * This class describes REST API routes available through HTTP.
  */
 public class TaskRoutes extends AllDirectives {
     private final ActorRef taskRegistryActor;
@@ -34,36 +35,10 @@ public class TaskRoutes extends AllDirectives {
         askTimeout = system.settings().config().getDuration("akka.http.routes.ask-timeout");
     }
 
-    private CompletionStage<TaskRegistryMessage.TaskCreationMessage> createCompressionMessage(CompressionTask task) {
-        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateCompressionMessage(task), askTimeout)
-                .thenApply(TaskRegistryMessage.TaskCreationMessage.class::cast)
-                .exceptionally(e -> new TaskRegistryMessage.TaskCreationMessage(null, null));
-    }
-
-    private CompletionStage<TaskRegistryMessage.TaskCreationMessage> createConversionMessage(ConversionTask task) {
-        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateConversionMessage(task), askTimeout)
-                .thenApply(TaskRegistryMessage.TaskCreationMessage.class::cast)
-                .exceptionally(e -> new TaskRegistryMessage.TaskCreationMessage(null, null));
-    }
-
-    private CompletionStage<TaskRegistryMessage.TaskCreationMessage> createPrimeMessage(PrimeTask task) {
-        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreatePrimeMessage(task), askTimeout)
-                .thenApply(TaskRegistryMessage.TaskCreationMessage.class::cast)
-                .exceptionally(e -> new TaskRegistryMessage.TaskCreationMessage(null, null));
-    }
-
-    private CompletionStage<TaskRegistryMessage.GetSSEMessage> getSSESource(UUID uuid) {
-        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateSSEMessage(uuid), askTimeout)
-                .thenApply(TaskRegistryMessage.GetSSEMessage.class::cast)
-                .exceptionally(e -> {
-                    if (e instanceof InvalidUUIDException) {
-                        return new TaskRegistryMessage.GetSSEMessage(null);
-                    } else {
-                        return null;
-                    }
-                });
-    }
-
+    /**
+     * Entry point for all available routes.
+     * @return the routes available.
+     */
     public Route taskRoutes() {
         return pathPrefix("tasks", () ->
                 concat(
@@ -99,20 +74,14 @@ public class TaskRoutes extends AllDirectives {
 
     private Route compressionTaskRoutes() {
         return pathPrefix("compression", () -> concat(
+                // Support HTTP POST method
                 post(() ->
                         entity(
+                                // Unmarshall JSON parameters received with the request
                                 Jackson.unmarshaller(CompressionTask.class),
-                                task -> onSuccess(createCompressionMessage(task),
-                                        msg -> {
-                                            if (msg.getUUID() == null) {
-                                                log.error("Compression task refused due to cluster unavailability");
-                                                return complete(StatusCodes.SERVICE_UNAVAILABLE);
-                                            } else {
-                                                log.info("Compression task accepted with UUID: {}", msg.getMessage());
-                                                return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
-                                            }
-                                        }
-                                )
+                                
+                                // HTTP response
+                                this::handleRoute
                         )
                 )
         ));
@@ -123,17 +92,7 @@ public class TaskRoutes extends AllDirectives {
                 post(() ->
                         entity(
                                 Jackson.unmarshaller(ConversionTask.class),
-                                task -> onSuccess(createConversionMessage(task),
-                                        msg -> {
-                                            if (msg.getUUID() == null) {
-                                                log.error("Conversion task refused due to cluster unavailability");
-                                                return complete(StatusCodes.SERVICE_UNAVAILABLE);
-                                            } else {
-                                                log.info("Conversion task accepted with UUID: {}", msg.getMessage());
-                                                return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
-                                            }
-                                        }
-                                )
+                                this::handleRoute
                         )
                 )
         ));
@@ -144,19 +103,43 @@ public class TaskRoutes extends AllDirectives {
                 post(() ->
                         entity(
                                 Jackson.unmarshaller(PrimeTask.class),
-                                task -> onSuccess(createPrimeMessage(task),
-                                        msg -> {
-                                            if (msg.getUUID() == null) {
-                                                log.error("Prime task refused due to cluster unavailability");
-                                                return complete(StatusCodes.SERVICE_UNAVAILABLE);
-                                            } else {
-                                                log.info("Prime task accepted with UUID: {}", msg.getMessage());
-                                                return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
-                                            }
-                                        }
-                                )
+                                this::handleRoute
                         )
                 )
         ));
+    }
+
+    private Route handleRoute(Task task) {
+        return onSuccess(createTaskMessage(task),
+                msg -> {
+                    if (msg.getUUID() == null) {
+                        //log.error("{} task refused due to cluster unavailability", task.getName());
+                        log.error("task refused due to cluster unavailability");
+                        return complete(StatusCodes.SERVICE_UNAVAILABLE);
+                    } else {
+                        //log.info("{} task accepted with UUID: {}", task.getName(), msg.getMessage());
+                        log.info("task accepted with UUID: {}", msg.getMessage());
+                        return complete(StatusCodes.ACCEPTED, msg, Jackson.marshaller());
+                    }
+                }
+        );
+    }
+
+    private CompletionStage<TaskRegistryMessage.TaskCreationMessage> createTaskMessage(Task task) {
+        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateTaskMessage(task), askTimeout)
+                .thenApply(TaskRegistryMessage.TaskCreationMessage.class::cast)
+                .exceptionally(e -> new TaskRegistryMessage.TaskCreationMessage(null, null));
+    }
+
+    private CompletionStage<TaskRegistryMessage.GetSSEMessage> getSSESource(UUID uuid) {
+        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateSSEMessage(uuid), askTimeout)
+                .thenApply(TaskRegistryMessage.GetSSEMessage.class::cast)
+                .exceptionally(e -> {
+                    if (e instanceof InvalidUUIDException) {
+                        return new TaskRegistryMessage.GetSSEMessage(null);
+                    } else {
+                        return null;
+                    }
+                });
     }
 }
