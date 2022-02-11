@@ -3,6 +3,7 @@ package it.polimi.mw.compinf.http;
 import akka.NotUsed;
 import akka.actor.*;
 import akka.cluster.Cluster;
+import akka.cluster.Member;
 import akka.cluster.MemberStatus;
 import akka.cluster.pubsub.DistributedPubSub;
 import akka.cluster.pubsub.DistributedPubSubMediator;
@@ -82,7 +83,7 @@ public class TaskRegistryActor extends AbstractLoggingActor {
 
     private void onCreateTaskMessage(CreateTaskMessage ctm) {
         // Check if cluster is up and in a safe status.
-        if  (cluster.selfMember().status() != MemberStatus.up()) {
+        if  (isClusterDown()) {
             getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
             return;
         }
@@ -98,7 +99,7 @@ public class TaskRegistryActor extends AbstractLoggingActor {
     }
 
     private void onCreateSSE(CreateSSEMessage csse) {
-        if  (cluster.selfMember().status() != MemberStatus.up()) {
+        if  (isClusterDown()) {
             getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
             return;
         }
@@ -129,7 +130,6 @@ public class TaskRegistryActor extends AbstractLoggingActor {
         Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>> currPair = sourceMap.get(uuid).get();
 
         getSender().tell(new GetSSEMessage(currPair.second()), getSelf());
-        currPair.first().offer("2");
     }
 
     /**
@@ -157,5 +157,23 @@ public class TaskRegistryActor extends AbstractLoggingActor {
         }
 
         sourceMap.remove(uuid);
+    }
+
+    private boolean isClusterDown() {
+        int nodes = 0b000;
+
+        for (Member member : cluster.state().getMembers()) {
+            if (member.status() == MemberStatus.up()) {
+                if (member.roles().contains("http")) {
+                    nodes = nodes | 0b100;
+                } else if (member.roles().contains("storeKeeper")) {
+                    nodes = nodes | 0b010;
+                } else if (member.roles().contains("worker")) {
+                    nodes = nodes | 0b001;
+                }
+            }
+        }
+
+        return nodes != 0b111;
     }
 }

@@ -1,3 +1,30 @@
-<script src="script.js"></script>
+<html lang="en">
+<head>
+    <script src="script.js"></script>
+    <title>Compute Infrastructure</title>
+</head>
 
-<h1>Prova</h1>
+<body>
+<h1>Compute Infrastructure</h1>
+<div id="formDiv">
+    <h2 id="errorMessage" style="display: none"></h2>
+    <label for="taskSelect">
+        Select a task:
+    </label>
+    <select id="taskSelect">
+        <option value="compression">Compression</option>
+        <option value="conversion">Conversion</option>
+        <option value="prime">Prime</option>
+    </select>
+
+    <br>
+    <form method="post" id="form">
+    </form>
+</div>
+
+<div id="sseDiv" style="display: none">
+    <h2 id="waitingMsg">Your task has been accepted and is being processed...</h2>
+    <h2 id="finishedMsg" style="display: none">Your task has been completed!</h2>
+</div>
+</body>
+</html>

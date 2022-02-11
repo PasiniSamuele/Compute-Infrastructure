@@ -9,7 +9,6 @@ import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.PathMatchers;
 import akka.http.javadsl.server.Route;
 import akka.pattern.Patterns;
-import it.polimi.mw.compinf.exceptions.ClusterUnavailableException;
 import it.polimi.mw.compinf.exceptions.InvalidUUIDException;
 import it.polimi.mw.compinf.tasks.CompressionTask;
 import it.polimi.mw.compinf.tasks.ConversionTask;
@@ -21,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 /**
  * This class describes REST API routes available through HTTP.
@@ -52,7 +50,7 @@ public class TaskRoutes extends AllDirectives {
                                 primeTaskRoutes()
                         )
                 )
-                .orElse(getFromResourceDirectory("html"))
+                        .orElse(getFromResourceDirectory("html"))
         );
     }
 
@@ -143,7 +141,7 @@ public class TaskRoutes extends AllDirectives {
         return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateSSEMessage(uuid), askTimeout)
                 .thenApply(TaskRegistryMessage.GetSSEMessage.class::cast)
                 .exceptionally(e -> {
-                    if (e instanceof InvalidUUIDException) {
+                    if (e.getCause() instanceof InvalidUUIDException) {
                         return new TaskRegistryMessage.GetSSEMessage(null);
                     } else {
                         return null;

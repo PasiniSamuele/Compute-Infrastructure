@@ -12,7 +12,7 @@ public class MainApp {
         HTTP, WORKER, STOREKEEPER
     }
 
-    private static boolean isValidAddress(String address) {
+    private static boolean isAddressInvalid(String address) {
         Pattern pattern = Pattern.compile("^"
                 + "(((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}" // Domain name
                 + "|"
@@ -22,7 +22,7 @@ public class MainApp {
                 + ":"
                 + "[0-9]{1,5}$"); // Port
 
-        return pattern.matcher(address).matches();
+        return !pattern.matcher(address).matches();
     }
 
     public static void main(String[] args) {
@@ -48,7 +48,7 @@ public class MainApp {
         }
 
         String seedNode;
-        if (!isValidAddress(args[2])) {
+        if (isAddressInvalid(args[2])) {
             System.out.println("Invalid seed node address!");
             return;
         } else {
@@ -56,7 +56,7 @@ public class MainApp {
         }
 
         String kafkaAddr;
-        if (!isValidAddress(args[3])) {
+        if (isAddressInvalid(args[3])) {
             System.out.println("Invalid kafka address!");
             return;
         } else {
