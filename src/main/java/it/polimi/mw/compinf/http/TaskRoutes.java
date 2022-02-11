@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 /**
  * This class describes REST API routes available through HTTP.
@@ -41,18 +42,22 @@ public class TaskRoutes extends AllDirectives {
      * @return the routes available.
      */
     public Route taskRoutes() {
-        return concat(indexRoute(),
+        return concat(
+                indexRoute(),
                 pathPrefix("tasks", () ->
                         concat(
                                 statusTaskRoutes(),
                                 compressionTaskRoutes(),
                                 conversionTaskRoutes(),
                                 primeTaskRoutes()
-                        )));
+                        )
+                )
+                .orElse(getFromResourceDirectory("html"))
+        );
     }
 
     private Route indexRoute() {
-        return get(() -> getFromResourceDirectory("html"));
+        return pathSingleSlash(() -> getFromResource("html/index.html"));
     }
 
     private Route statusTaskRoutes() {
