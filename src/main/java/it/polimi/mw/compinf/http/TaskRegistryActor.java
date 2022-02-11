@@ -94,7 +94,7 @@ public class TaskRegistryActor extends AbstractLoggingActor {
         sourceMap.put(task.getUUID(), Optional.empty());
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, task.getUUID().toString()));
-        getSender().tell(new TaskCreationMessage(/*task.getName() + */" task submitted successfully!", task.getUUID()), getSelf());
+        getSender().tell(new TaskCreationMessage(task.getName() + " task submitted successfully!", task.getUUID()), getSelf());
     }
 
     private void onCreateSSE(CreateSSEMessage csse) {

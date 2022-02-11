@@ -13,7 +13,7 @@ public class ConversionTask extends Task {
             @JsonProperty("forceFailure") int forceFailure) {
         super(directoryName, forceFailure);
         this.targetFormat = targetFormat;
-        //this.name = "Conversion";
+        this.name = "Conversion";
     }
 
     public String getTargetFormat() {

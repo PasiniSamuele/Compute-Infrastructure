@@ -13,7 +13,7 @@ public class PrimeTask extends Task {
             @JsonProperty("forceFailure") int forceFailure) {
         super(directoryName, forceFailure);
         this.upperBound = upperBound;
-        //this.name = "Prime";
+        this.name = "Prime";
     }
 
     public int getUpperBound() {
