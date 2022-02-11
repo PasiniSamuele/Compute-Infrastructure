@@ -37,17 +37,22 @@ public class TaskRoutes extends AllDirectives {
 
     /**
      * Entry point for all available routes.
+     *
      * @return the routes available.
      */
     public Route taskRoutes() {
-        return pathPrefix("tasks", () ->
-                concat(
-                        statusTaskRoutes(),
-                        compressionTaskRoutes(),
-                        conversionTaskRoutes(),
-                        primeTaskRoutes()
-                )
-        );
+        return concat(indexRoute(),
+                pathPrefix("tasks", () ->
+                        concat(
+                                statusTaskRoutes(),
+                                compressionTaskRoutes(),
+                                conversionTaskRoutes(),
+                                primeTaskRoutes()
+                        )));
+    }
+
+    private Route indexRoute() {
+        return get(() -> getFromResourceDirectory("html"));
     }
 
     private Route statusTaskRoutes() {
@@ -79,7 +84,7 @@ public class TaskRoutes extends AllDirectives {
                         entity(
                                 // Unmarshall JSON parameters received with the request
                                 Jackson.unmarshaller(CompressionTask.class),
-                                
+
                                 // HTTP response
                                 this::handleRoute
                         )
