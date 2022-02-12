@@ -3,8 +3,6 @@ package it.polimi.mw.compinf.actors;
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.cluster.pubsub.DistributedPubSub;
-import akka.cluster.pubsub.DistributedPubSubMediator;
 import it.polimi.mw.compinf.tasks.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -17,15 +15,16 @@ import java.util.Random;
 import java.util.UUID;
 
 public class WorkerActor extends AbstractLoggingActor {
-    private final ActorRef pubSubMediator;
+    private final ActorRef storeKeeperRouter;
+
     private final KafkaProducer<String, String> kafkaProducer;
 
     private final static String compressionOutput = "Compression task executed!%nTask UUID: %s%nCompression Ratio: %f";
     private final static String conversionOutput = "Conversion task executed!%nTask UUID: %s%nTarget Format: %s";
     private final static String primeOutput = "Prime task executed!%nTask UUID: %s%nUpper Bound: %d";
 
-    public WorkerActor(String kafka) {
-        pubSubMediator = DistributedPubSub.get(getContext().system()).mediator();
+    public WorkerActor(String kafka, ActorRef storeKeeperRouter) {
+        this.storeKeeperRouter = storeKeeperRouter;
 
         final Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka);
@@ -35,8 +34,8 @@ public class WorkerActor extends AbstractLoggingActor {
         kafkaProducer = new KafkaProducer<>(props);
     }
 
-    public static Props props(String kafka) {
-        return Props.create(WorkerActor.class, kafka);
+    public static Props props(String kafka, ActorRef storeKeeperRouter) {
+        return Props.create(WorkerActor.class, kafka, storeKeeperRouter);
     }
 
     @Override
@@ -96,7 +95,7 @@ public class WorkerActor extends AbstractLoggingActor {
 
     private void onFinishedTask(UUID uuid, byte[] file, String directoryName) {
         TaskResult taskResult = new TaskResult(uuid, file, directoryName);
-        pubSubMediator.tell(new DistributedPubSubMediator.Publish("TaskResult", taskResult), getSelf());
+        storeKeeperRouter.tell(taskResult, getSelf());
     }
 
     private void checkTaskFailure(Task task) throws Exception {

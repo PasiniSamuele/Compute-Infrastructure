@@ -12,7 +12,7 @@ public abstract class Node {
 
     static Config setupClusterNodeConfig(String role, String port, String seed) {
         return ConfigFactory.parseString(
-                                String.format("akka.remote.artery.canonical.port=%s%n", port)
+                        String.format("akka.remote.artery.canonical.port=%s%n", port)
                                 + String.format("akka.cluster.seed-nodes=[\"akka://cluster@%s\"]%n", seed)
                                 + String.format("akka.cluster.roles=[\"%s\"]%n", role))
                 .withFallback(ConfigFactory.load());

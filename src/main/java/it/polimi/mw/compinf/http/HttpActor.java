@@ -1,15 +1,15 @@
 package it.polimi.mw.compinf.http;
 
 import akka.NotUsed;
-import akka.actor.*;
+import akka.actor.AbstractLoggingActor;
+import akka.actor.ActorRef;
+import akka.actor.Props;
+import akka.actor.Status;
 import akka.cluster.Cluster;
 import akka.cluster.Member;
 import akka.cluster.MemberStatus;
-import akka.cluster.pubsub.DistributedPubSub;
-import akka.cluster.pubsub.DistributedPubSubMediator;
 import akka.http.javadsl.model.sse.ServerSentEvent;
 import akka.japi.Pair;
-import akka.routing.FromConfig;
 import akka.stream.Materializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
@@ -30,10 +30,11 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static it.polimi.mw.compinf.http.TaskRegistryMessage.*;
+import static it.polimi.mw.compinf.http.InternalHttpMessage.*;
 
-public class TaskRegistryActor extends AbstractLoggingActor {
-    private final ActorRef workerNodeRouter;
+public class HttpActor extends AbstractLoggingActor {
+    private final ActorRef workerRouter;
+    private final ActorRef storeKeeperRouter;
     private final KafkaProducer<String, String> kafkaProducer;
 
     private final Map<UUID, Optional<Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>>> sourceMap;
@@ -45,16 +46,12 @@ public class TaskRegistryActor extends AbstractLoggingActor {
      *
      * @param kafka kafka address:port.
      */
-    public TaskRegistryActor(String kafka) {
+    public HttpActor(String kafka, ActorRef workerRouter, ActorRef storeKeeperRouter) {
         cluster = Cluster.get(getContext().getSystem());
         sourceMap = new ConcurrentHashMap<>();
         mat = Materializer.createMaterializer(getContext());
-        workerNodeRouter = getContext().actorOf(FromConfig.getInstance().props(), "workerNodeRouter");
-
-        // Distributed pub/sub to make Akka actors communicate through the TaskExecuted topic
-        // without knowing their addresses/locations.
-        ActorRef pubSubMediator = DistributedPubSub.get(getContext().system()).mediator();
-        pubSubMediator.tell(new DistributedPubSubMediator.Subscribe("TaskExecuted", getSelf()), getSelf());
+        this.workerRouter = workerRouter;
+        this.storeKeeperRouter = storeKeeperRouter;
 
         // Initialize kafka
         final Properties props = new Properties();
@@ -66,8 +63,8 @@ public class TaskRegistryActor extends AbstractLoggingActor {
         kafkaProducer = new KafkaProducer<>(props);
     }
 
-    public static Props props(String kafka) {
-        return Props.create(TaskRegistryActor.class, kafka);
+    public static Props props(String kafka, ActorRef workerRouter, ActorRef storeKeeperRouter) {
+        return Props.create(HttpActor.class, kafka, workerRouter, storeKeeperRouter);
     }
 
     @Override
@@ -76,14 +73,13 @@ public class TaskRegistryActor extends AbstractLoggingActor {
                 .match(CreateTaskMessage.class, this::onCreateTaskMessage)
                 .match(CreateSSEMessage.class, this::onCreateSSE)
                 .match(TaskExecutedMessage.class, this::onTaskExecuted)
-                .match(DistributedPubSubMediator.SubscribeAck.class, msg -> log().info("Subscribed to 'TaskExecuted' topic"))
                 .matchAny(o -> log().info("Received unknown message"))
                 .build();
     }
 
     private void onCreateTaskMessage(CreateTaskMessage ctm) {
         // Check if cluster is up and in a safe status.
-        if  (isClusterDown()) {
+        if (isClusterDown()) {
             getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
             return;
         }
@@ -91,7 +87,7 @@ public class TaskRegistryActor extends AbstractLoggingActor {
         Task task = ctm.getTask();
 
         // Send the actual compression task to the worker router.
-        workerNodeRouter.tell(task, getSelf());
+        workerRouter.tell(task, getSelf());
         sourceMap.put(task.getUUID(), Optional.empty());
 
         kafkaProducer.send(new ProducerRecord<>("pending", null, task.getUUID().toString()));
@@ -99,7 +95,7 @@ public class TaskRegistryActor extends AbstractLoggingActor {
     }
 
     private void onCreateSSE(CreateSSEMessage csse) {
-        if  (isClusterDown()) {
+        if (isClusterDown()) {
             getSender().tell(new Status.Failure(new ClusterUnavailableException()), getSelf());
             return;
         }

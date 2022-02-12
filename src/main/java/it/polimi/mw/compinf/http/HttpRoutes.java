@@ -24,13 +24,13 @@ import java.util.concurrent.CompletionStage;
 /**
  * This class describes REST API routes available through HTTP.
  */
-public class TaskRoutes extends AllDirectives {
-    private final ActorRef taskRegistryActor;
-    private final static Logger log = LoggerFactory.getLogger(TaskRoutes.class);
+public class HttpRoutes extends AllDirectives {
+    private final ActorRef httpActor;
+    private final static Logger log = LoggerFactory.getLogger(HttpRoutes.class);
     private final Duration askTimeout;
 
-    public TaskRoutes(ActorSystem system, ActorRef taskRegistryActor) {
-        this.taskRegistryActor = taskRegistryActor;
+    public HttpRoutes(ActorSystem system, ActorRef httpActor) {
+        this.httpActor = httpActor;
         askTimeout = system.settings().config().getDuration("akka.http.routes.ask-timeout");
     }
 
@@ -131,18 +131,18 @@ public class TaskRoutes extends AllDirectives {
         );
     }
 
-    private CompletionStage<TaskRegistryMessage.TaskCreationMessage> createTaskMessage(Task task) {
-        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateTaskMessage(task), askTimeout)
-                .thenApply(TaskRegistryMessage.TaskCreationMessage.class::cast)
-                .exceptionally(e -> new TaskRegistryMessage.TaskCreationMessage(null, null));
+    private CompletionStage<InternalHttpMessage.TaskCreationMessage> createTaskMessage(Task task) {
+        return Patterns.ask(httpActor, new InternalHttpMessage.CreateTaskMessage(task), askTimeout)
+                .thenApply(InternalHttpMessage.TaskCreationMessage.class::cast)
+                .exceptionally(e -> new InternalHttpMessage.TaskCreationMessage(null, null));
     }
 
-    private CompletionStage<TaskRegistryMessage.GetSSEMessage> getSSESource(UUID uuid) {
-        return Patterns.ask(taskRegistryActor, new TaskRegistryMessage.CreateSSEMessage(uuid), askTimeout)
-                .thenApply(TaskRegistryMessage.GetSSEMessage.class::cast)
+    private CompletionStage<InternalHttpMessage.GetSSEMessage> getSSESource(UUID uuid) {
+        return Patterns.ask(httpActor, new InternalHttpMessage.CreateSSEMessage(uuid), askTimeout)
+                .thenApply(InternalHttpMessage.GetSSEMessage.class::cast)
                 .exceptionally(e -> {
                     if (e.getCause() instanceof InvalidUUIDException) {
-                        return new TaskRegistryMessage.GetSSEMessage(null);
+                        return new InternalHttpMessage.GetSSEMessage(null);
                     } else {
                         return null;
                     }
