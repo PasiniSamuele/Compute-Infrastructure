@@ -3,7 +3,7 @@ package it.polimi.mw.compinf.actors;
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import it.polimi.mw.compinf.http.InternalHttpMessage;
+import it.polimi.mw.compinf.http.InternalMessage;
 import it.polimi.mw.compinf.tasks.TaskResult;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -52,7 +52,7 @@ public class StoreKeeperActor extends AbstractLoggingActor {
             Files.write(Path.of(BASE_DIRECTORY + result.getDirectoryName() + File.separator + result.getUUID()), result.getFile());
 
             kafkaProducer.send(new ProducerRecord<>("completed", null, result.getUUID().toString()));
-            InternalHttpMessage.TaskExecutedMessage taskExecuted = new InternalHttpMessage.TaskExecutedMessage(result.getUUID());
+            InternalMessage.TaskExecutedMessage taskExecuted = new InternalMessage.TaskExecutedMessage(result.getUUID());
 
             httpRouter.tell(taskExecuted, getSelf());
 

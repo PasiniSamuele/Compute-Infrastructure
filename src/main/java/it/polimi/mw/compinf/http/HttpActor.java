@@ -30,11 +30,10 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static it.polimi.mw.compinf.http.InternalHttpMessage.*;
+import static it.polimi.mw.compinf.http.InternalMessage.*;
 
 public class HttpActor extends AbstractLoggingActor {
     private final ActorRef workerRouter;
-    private final ActorRef storeKeeperRouter;
     private final KafkaProducer<String, String> kafkaProducer;
 
     private final Map<UUID, Optional<Pair<SourceQueueWithComplete<String>, Source<ServerSentEvent, NotUsed>>>> sourceMap;
@@ -46,12 +45,11 @@ public class HttpActor extends AbstractLoggingActor {
      *
      * @param kafka kafka address:port.
      */
-    public HttpActor(String kafka, ActorRef workerRouter, ActorRef storeKeeperRouter) {
+    public HttpActor(String kafka, ActorRef workerRouter) {
         cluster = Cluster.get(getContext().getSystem());
         sourceMap = new ConcurrentHashMap<>();
         mat = Materializer.createMaterializer(getContext());
         this.workerRouter = workerRouter;
-        this.storeKeeperRouter = storeKeeperRouter;
 
         // Initialize kafka
         final Properties props = new Properties();
@@ -63,8 +61,8 @@ public class HttpActor extends AbstractLoggingActor {
         kafkaProducer = new KafkaProducer<>(props);
     }
 
-    public static Props props(String kafka, ActorRef workerRouter, ActorRef storeKeeperRouter) {
-        return Props.create(HttpActor.class, kafka, workerRouter, storeKeeperRouter);
+    public static Props props(String kafka, ActorRef workerRouter) {
+        return Props.create(HttpActor.class, kafka, workerRouter);
     }
 
     @Override

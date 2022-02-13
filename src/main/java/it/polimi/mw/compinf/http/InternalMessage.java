@@ -9,7 +9,7 @@ import it.polimi.mw.compinf.util.CborSerializable;
 
 import java.util.UUID;
 
-public interface InternalHttpMessage {
+public interface InternalMessage {
     class TaskCreationMessage implements CborSerializable {
         private final String message;
         private final UUID uuid;

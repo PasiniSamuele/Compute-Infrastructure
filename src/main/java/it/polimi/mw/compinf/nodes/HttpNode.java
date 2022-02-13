@@ -27,10 +27,7 @@ public class HttpNode extends Node {
         // Router to send messages to Worker nodes.
         ActorRef workerRouter = actorSystem.actorOf(FromConfig.getInstance().props(), "workerRouter");
 
-        // Router to send messages to StoreKeeper node.
-        ActorRef storeKeeperRouter = actorSystem.actorOf(FromConfig.getInstance().props(), "storeKeeperRouter");
-
-        ActorRef httpActor = actorSystem.actorOf(HttpActor.props(kafka, workerRouter, storeKeeperRouter), "httpActor");
+        ActorRef httpActor = actorSystem.actorOf(HttpActor.props(kafka, workerRouter), "httpActor");
 
         HttpRoutes httpRoutes = new HttpRoutes(actorSystem, httpActor);
         CompletionStage<ServerBinding> futureBinding = Http.get(actorSystem).newServerAt("0.0.0.0", 40000).bind(httpRoutes.taskRoutes());
