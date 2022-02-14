@@ -131,18 +131,18 @@ public class HttpRoutes extends AllDirectives {
         );
     }
 
-    private CompletionStage<InternalHttpMessage.TaskCreationMessage> createTaskMessage(Task task) {
-        return Patterns.ask(httpActor, new InternalHttpMessage.CreateTaskMessage(task), askTimeout)
-                .thenApply(InternalHttpMessage.TaskCreationMessage.class::cast)
-                .exceptionally(e -> new InternalHttpMessage.TaskCreationMessage(null, null));
+    private CompletionStage<InternalMessage.TaskCreationMessage> createTaskMessage(Task task) {
+        return Patterns.ask(httpActor, new InternalMessage.CreateTaskMessage(task), askTimeout)
+                .thenApply(InternalMessage.TaskCreationMessage.class::cast)
+                .exceptionally(e -> new InternalMessage.TaskCreationMessage(null, null));
     }
 
-    private CompletionStage<InternalHttpMessage.GetSSEMessage> getSSESource(UUID uuid) {
-        return Patterns.ask(httpActor, new InternalHttpMessage.CreateSSEMessage(uuid), askTimeout)
-                .thenApply(InternalHttpMessage.GetSSEMessage.class::cast)
+    private CompletionStage<InternalMessage.GetSSEMessage> getSSESource(UUID uuid) {
+        return Patterns.ask(httpActor, new InternalMessage.CreateSSEMessage(uuid), askTimeout)
+                .thenApply(InternalMessage.GetSSEMessage.class::cast)
                 .exceptionally(e -> {
                     if (e.getCause() instanceof InvalidUUIDException) {
-                        return new InternalHttpMessage.GetSSEMessage(null);
+                        return new InternalMessage.GetSSEMessage(null);
                     } else {
                         return null;
                     }
