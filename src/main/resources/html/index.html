@@ -1,30 +1,45 @@
 <html lang="en">
 <head>
-    <script src="script.js"></script>
     <title>Compute Infrastructure</title>
+
+    <link rel="stylesheet" href="bulma.min.css">
+    <link rel="stylesheet" href="custom.css">
+    <script src="script.js"></script>
 </head>
 
 <body>
-<h1>Compute Infrastructure</h1>
-<div id="formDiv">
-    <h2 id="errorMessage" style="display: none"></h2>
-    <label for="taskSelect">
-        Select a task:
-    </label>
-    <select id="taskSelect">
-        <option value="compression">Compression</option>
-        <option value="conversion">Conversion</option>
-        <option value="prime">Prime</option>
-    </select>
-
-    <br>
-    <form method="post" id="form">
-    </form>
+<div class="columns">
+    <div class="column has-text-centered mt-3 mb-5">
+        <h1 class="title is-2">Compute Infrastructure</h1>
+    </div>
 </div>
+<div class="columns box-height">
+    <div class="column is-three-fifths is-offset-one-fifth box box-height p-4" id="formDiv">
+        <h2 class="title is-5 has-text-danger is-hidden" id="errorMessage"></h2>
+        <div class="field">
+            <label class="label" for="taskSelect">
+                Select a task:
+            </label>
 
-<div id="sseDiv" style="display: none">
-    <h2 id="waitingMsg">Your task has been accepted and is being processed...</h2>
-    <h2 id="finishedMsg" style="display: none">Your task has been completed!</h2>
+            <div class="control">
+                <div class="select">
+                    <select id="taskSelect">
+                        <option value="compression">Compression</option>
+                        <option value="conversion">Conversion</option>
+                        <option value="prime">Prime</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <form method="post" id="form">
+        </form>
+    </div>
+
+    <div class="column is-three-fifths is-offset-one-fifth box box-height p-4 has-text-centered is-hidden" id="sseDiv">
+        <h2 class="title is-4 pb-4 mt-4">Task <span id="taskUuid"></span></h2>
+        <h3 class="title is-5" id="waitingMsg">Your task has been accepted and is being processed!</h3>
+        <h3 class="title is-5 has-text-success is-hidden" id="finishedMsg">Your task has been completed!</h3>
+    </div>
 </div>
 </body>
 </html>

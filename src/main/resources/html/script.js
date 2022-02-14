@@ -14,25 +14,61 @@
     function onTaskSelectChange() {
         const task = taskSelect.value;
         form.action = "/tasks/" + task;
-        form.innerHTML = "<label for='directoryName'>Directory Name:</label>" +
-            "<input id='directoryName' name='directoryName' type='text'><br>" +
-            getTaskInput(task) +
-            "<label for='forceFailure'>Force Failure:</label>" +
-            "<input id='forceFailure' name='forceFailure' type='number'><br><br>" +
-            "<input type='submit' id='submitButton' value='Submit'>"
+
+        while (form.firstChild) {
+            form.firstChild.remove();
+        }
+
+        form.appendChild(getInputElement("directoryName", "Directory Name", "text"));
+        form.appendChild(getInputElement("forceFailure", "Force Failure", "number"));
+        form.appendChild(getTaskElement(task));
+
+        let controlDiv = document.createElement("div");
+        controlDiv.className = "control";
+
+        let submitButton = document.createElement("button");
+        submitButton.className = "button is-primary";
+        submitButton.innerHTML = "Submit";
+
+        controlDiv.appendChild(submitButton);
+        form.appendChild(controlDiv);
     }
 
-    function getTaskInput(task) {
+    function getInputElement(id, text, type) {
+        let fieldDiv = document.createElement("div");
+        fieldDiv.className = "field";
+
+        let inputLabel = document.createElement("label");
+        inputLabel.setAttribute("for", id);
+        inputLabel.className = "label";
+        inputLabel.innerHTML = text;
+
+        fieldDiv.appendChild(inputLabel)
+
+        let controlDiv = document.createElement("div");
+        controlDiv.className = "control";
+
+        let input = document.createElement("input");
+        input.id = id;
+        input.name = id;
+        input.type = type;
+        input.className = "input";
+        input.placeholder = text;
+
+        controlDiv.appendChild(input)
+        fieldDiv.appendChild(controlDiv)
+
+        return fieldDiv;
+    }
+
+    function getTaskElement(task) {
         switch (task) {
             case "compression":
-                return "<label for='compressionRatio'>Compression Ratio:</label>" +
-                    "<input id='compressionRatio' name='compressionRatio' type='number'><br>"
+                return getInputElement("compressionRatio", "Compression Ratio", "number");
             case "conversion":
-                return "<label for='targetFormat'>Target Format:</label>" +
-                    "<input id='targetFormat' name='targetFormat' type='text'><br>"
+                return getInputElement("targetFormat", "Target Format", "text");
             case "prime":
-                return "<label for='upperBound'>Upper Bound:</label>" +
-                    "<input id='upperBound' name='upperBound' type='number'><br>"
+                return getInputElement("upperBound", "Upper Bound", "number");
         }
     }
 
@@ -49,15 +85,18 @@
         req.onload = function () {
             if (req.readyState === req.DONE) {
                 if (req.status === 202) {
-                    document.getElementById("formDiv").style.display = "none";
-                    document.getElementById("sseDiv").style.display = "block";
+                    document.getElementById("formDiv").classList.add("is-hidden");
+                    document.getElementById("sseDiv").classList.remove("is-hidden");
 
-                    evtSource = new EventSource("/tasks/" + JSON.parse(req.responseText).uuid);
+                    let uuid = JSON.parse(req.responseText).uuid;
+                    document.getElementById("taskUuid").innerText = uuid;
+
+                    evtSource = new EventSource("/tasks/" + uuid);
                     evtSource.onmessage = onSseMessage;
                 } else {
                     let errorMsg = document.getElementById("errorMessage");
                     errorMsg.innerText = "The server cannot accept tasks at the moment!"
-                    errorMsg.style.display = "block";
+                    errorMsg.classList.remove("is-hidden");
                 }
             }
         };
@@ -69,8 +108,8 @@
 
     function onSseMessage(event) {
         if (event.data !== "") {
-            document.getElementById("waitingMsg").style.display = "none";
-            document.getElementById("finishedMsg").style.display = "block";
+            document.getElementById("waitingMsg").classList.add("is-hidden");
+            document.getElementById("finishedMsg").classList.remove("is-hidden");
 
             evtSource.close();
         }
