@@ -12,8 +12,12 @@ class PriorityMailbox extends UnboundedStablePriorityMailbox {
         super(new PriorityGenerator() {
             @Override
             public int gen(Object taskObj) {
-                Task task = (Task) taskObj;
-                return task.getPriority();
+                try {
+                    Task task = (Task) taskObj;
+                    return task.getPriority();
+                } catch(ClassCastException e) {
+                    return 1;
+                }
             }
         });
     }
