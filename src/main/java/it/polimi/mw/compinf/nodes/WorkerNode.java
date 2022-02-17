@@ -12,8 +12,7 @@ import scala.concurrent.duration.Duration;
 import java.util.concurrent.TimeUnit;
 
 public class WorkerNode extends Node {
-    private final static int SUPERVISOR_RETRIES = 10;
-    private final static int SUPERVISOR_PERIOD = 1;
+    private final static int SUPERVISOR_RETRIES = -1; // Negative value means no limit if the duration is infinite
 
     public WorkerNode(String port, String seed, String kafka) {
         super("worker", port, seed, kafka);
@@ -24,8 +23,7 @@ public class WorkerNode extends Node {
         ActorSystem actorSystem = ActorSystem.create("cluster", setupClusterNodeConfig(role, port, seed));
 
         // Creating supervision strategy for the local router
-        Duration duration = Duration.create(SUPERVISOR_PERIOD, TimeUnit.MINUTES);
-        SupervisorStrategy strategy = new OneForOneStrategy(SUPERVISOR_RETRIES, duration, false,
+        SupervisorStrategy strategy = new OneForOneStrategy(SUPERVISOR_RETRIES, Duration.Inf(), false,
                 DeciderBuilder.match(Exception.class, e -> SupervisorStrategy.restart()).build());
 
         // Router to send messages to StoreKeeper node.
