@@ -1,6 +1,5 @@
 package it.polimi.mw.compinf.logging.spark;
 
-import it.polimi.mw.compinf.logging.kafka.CustomKafkaUtils;
 import it.polimi.mw.compinf.logging.spark.sink.DatabaseSQLSink;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -15,6 +14,7 @@ public class SparkUtils {
 
     private final static String MASTER = "spark://127.0.0.1:7077";    //spark cluster address
     private final static String APP_NAME = "LogService";
+    private final static String KAFKA_SERVER_ADDR = "127.0.0.1:9092";
 
     /**
      * Method to initilize the SparkSession
@@ -67,14 +67,10 @@ public class SparkUtils {
 
     public static void setStreams(SparkSession sparkSession, SparkStreamingInterface sparkStreaming, String watermark) {
 
-        //Kafka initialization
-        String kafkaServer = CustomKafkaUtils.getServerAddr();
-
-
-        //Get the streams from Kafka Topics
-        Dataset<Row> completed = getStructuredStream(sparkSession, "completed", kafkaServer, watermark);
-        Dataset<Row> pending = getStructuredStream(sparkSession, "pending", kafkaServer, watermark);
-        Dataset<Row> starting = getStructuredStream(sparkSession, "starting", kafkaServer, watermark);
+        // Get the streams from Kafka Topics
+        Dataset<Row> completed = getStructuredStream(sparkSession, "completed", KAFKA_SERVER_ADDR, watermark);
+        Dataset<Row> pending = getStructuredStream(sparkSession, "pending", KAFKA_SERVER_ADDR, watermark);
+        Dataset<Row> starting = getStructuredStream(sparkSession, "starting", KAFKA_SERVER_ADDR, watermark);
 
         // Pending task without the one already completed
         Dataset<Row> actualPending = SparkUtils.getActualPending(starting, pending);
