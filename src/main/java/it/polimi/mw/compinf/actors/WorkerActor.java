@@ -57,7 +57,7 @@ public class WorkerActor extends AbstractLoggingActor {
         checkTaskFailure(task);
 
         // Dummy compression
-        Thread.sleep(10000);
+        taskExecution(5, 7);
 
         String taskString = String.format(compressionOutput, uuid, task.getCompressionRatio());
         onFinishedTask(uuid, taskString.getBytes(), task.getDirectoryName());
@@ -72,7 +72,7 @@ public class WorkerActor extends AbstractLoggingActor {
         checkTaskFailure(task);
 
         // Dummy conversion
-        Thread.sleep(10000);
+        taskExecution(10, 15);
 
         String taskString = String.format(conversionOutput, uuid, task.getTargetFormat());
         onFinishedTask(uuid, taskString.getBytes(), task.getDirectoryName());
@@ -87,7 +87,7 @@ public class WorkerActor extends AbstractLoggingActor {
         checkTaskFailure(task);
 
         // Dummy prime
-        Thread.sleep(10000);
+        taskExecution(7, 12);
 
         String taskString = String.format(primeOutput, uuid, task.getUpperBound());
         onFinishedTask(uuid, taskString.getBytes(), task.getDirectoryName());
@@ -107,6 +107,13 @@ public class WorkerActor extends AbstractLoggingActor {
                 throw new Exception();
             }
         }
+    }
+
+    private void taskExecution(int minExecTime, int maxExecTime) throws InterruptedException {
+        int randInt = (int) (Math.random() * (maxExecTime - minExecTime + 1) + minExecTime);
+
+        // Simulating execution time
+        Thread.sleep(randInt * 1000L);
     }
 
     @Override
